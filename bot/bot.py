@@ -2,98 +2,163 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes
 
-# Безопасное получение токена
-TOKEN = os.environ.get("8516268528:AAEmg97xyDyWtLE0fi4pu-2ITXkNBFuSr-0")
-
-if not TOKEN:
-    print("❌ Ошибка: TOKEN не найден! Установите переменную окружения TOKEN в Render")
-    exit(1)
+TOKEN = os.getenv("TOKEN")
 
 COMPLIMENTS = [
-    "Лиз, ты сегодня невероятно выглядишь! 🌟",
-    "У тебя отличное чувство юмора! 😄",
-    "С тобой всегда приятно общаться! 💬",
-    "Твоя улыбка поднимает настроение! ☀️",
-    "Ты очень талантливый человек! 🎨",
-    "Твоя энергия вдохновляет! ✨",
-    "У тебя классная грудь!)",
-    "Сегодня не поддавайся плохим событиям, будь выше."
+    "Ты такая красивая! 🌟",
+    "С тобой я часто улыбаюсь! 😄",
+    "С тобой так хорошо общаться! 💬",
+    "Твоя улыбка поднимает настроение и не только! ☀️",
+    "У тебя прикольные волосы! 🎨",
+    "Твоя атмосфера умиляет! ✨",
+    "У тебя прекрасный вкус! 👌",
+    "Ты умнее, чем думаешь! 🧠",
+    "С тобой хочется стать лучше! 💫",
+    "Твоё присутствие делает мир ярче! 🌈",
+    "И все таки у тебя такая красивая грудь, вот бы разглядеть получше! (скидывать в лс создателю💖)"
 ]
 
-compliments_active = False
+active_compliments = {}
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Привет, я сам напишу тебе всё, что надо! Я бот для Лизы от milk.\n"
-        "Доступные команды:\n"
-        "/start - начало работы\n"
-        "/compliments - начать отправку комплиментов\n"
-        "/compliments_off - остановить отправку комплиментов"
+    welcome_text = (
+        "🌟 Привет! Я бот для Лизы от milk!\n\n"
+        "Госпожа, ваши команды для меня:\n"
+        "/start - начало моей работы\n"
+        "/compliments - начать отправку сообщений\n"
+        "/compliments_off - остановить отправку\n"
+        "/settings - настройки\n\n"
+        "Просто напиши мне что-нибудь, и я отвечу, пока что правда только одним соо! 💖"
     )
+    await update.message.reply_text(welcome_text)
 
 
 async def start_compliments(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global compliments_active
-    if compliments_active:
-        await update.message.reply_text("Рассылка уже запущена!")
+    chat_id = update.effective_chat.id
+
+    if chat_id in active_compliments:
+        await update.message.reply_text("⏳ Ц, рассылка уже запущена!")
         return
 
-    compliments_active = True
-    await update.message.reply_text("Запускаю все свои мысли в этого бота! ❤️")
+    await update.message.reply_text(
+        "📝 Милая, введи интервал в секундах (например, 5):\n"
+        "Или нажми /cancel для отмены"
+    )
 
-    # Запускаем асинхронную задачу
-    context.application.create_task(send_compliments(update.effective_chat.id, context.application))
+    context.user_data['waiting_for_interval'] = True
 
 
-async def send_compliments(chat_id: int, app: Application):
-    global compliments_active
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    text = update.message.text
+
+    if context.user_data.get('waiting_for_interval'):
+        try:
+            interval = int(text)
+            if interval < 2:
+                await update.message.reply_text("❌ Дурашка, интервал должен быть не менее 2 секунд!")
+                return
+
+            context.user_data['waiting_for_interval'] = False
+            await update.message.reply_text(f"✅ Рассылка запущена с интервалом {interval} сек!")
+
+            task = asyncio.create_task(send_compliments(chat_id, interval, context.application))
+            active_compliments[chat_id] = {'task': task, 'interval': interval}
+
+        except ValueError:
+            await update.message.reply_text("❌ Введи число!")
+        return
+
+    await update.message.reply_text(f"Госпожа написала: '{text}'\n\nИспользуй команды из меню! 📋")
+
+
+async def send_compliments(chat_id: int, interval: int, app: Application):
     index = 0
 
-    while compliments_active:
-        try:
-            # Отправляем комплимент через существующее приложение
-            await app.bot.send_message(chat_id=chat_id, text=COMPLIMENTS[index])
+    try:
+        while chat_id in active_compliments:
+            await app.bot.send_message(
+                chat_id=chat_id,
+                text=f"💖 Комплимент {index + 1}:\n{COMPLIMENTS[index]}"
+            )
 
             index = (index + 1) % len(COMPLIMENTS)
-            await asyncio.sleep(5)
+            await asyncio.sleep(interval)
 
-        except Exception as e:
-            print(f"Ошибка в send_compliments: {e}")
-            compliments_active = False
-            break
+    except Exception as e:
+        print(f"Ошибка в рассылке: {e}")
+    finally:
+        if chat_id in active_compliments:
+            del active_compliments[chat_id]
 
 
 async def stop_compliments(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global compliments_active
-    if compliments_active:
-        compliments_active = False
-        await update.message.reply_text("Так и быть, замолчуgit --version. 😊")
+    chat_id = update.effective_chat.id
+
+    if chat_id in active_compliments:
+        active_compliments[chat_id]['task'].cancel()
+        del active_compliments[chat_id]
+        await update.message.reply_text("🛑 Госпожа, молчу по вашему приказу!")
     else:
-        await update.message.reply_text("Рассылка не была запущена.")
+        await update.message.reply_text("ℹ️ Рассылка не была запущена.")
+
+
+async def list_compliments(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = "📜 Список всех комплиментов:\n\n"
+    for i, compliment in enumerate(COMPLIMENTS, 1):
+        text += f"{i}. {compliment}\n"
+
+    await update.message.reply_text(text)
+
+
+async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    if chat_id in active_compliments:
+        interval = active_compliments[chat_id]['interval']
+        text = f"⚙️ Текущие настройки:\n\nИнтервал: {interval} сек\nСтатус: Активна ✅"
+    else:
+        text = "⚙️ Текущие настройки:\n\nСтатус: Неактивна ⏸️"
+
+    text += f"\n\nВсего комплиментов: {len(COMPLIMENTS)}"
+    await update.message.reply_text(text)
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data.get('waiting_for_interval'):
+        context.user_data['waiting_for_interval'] = False
+        await update.message.reply_text("❌ Действие отменено")
+    else:
+        await update.message.reply_text("Нечего отменять 🤷‍♂️")
+
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    print(f"Ошибка: {context.error}")
 
 
 def main():
-    # Создаем приложение с увеличенными таймаутами для Render
-    application = Application.builder() \
-        .token(TOKEN) \
-        .read_timeout(30) \
-        .write_timeout(30) \
-        .pool_timeout(30) \
-        .connect_timeout(30) \
-        .build()
+    print("🚀 Запуск бота...")
+    print(f"🤖 Количество комплиментов: {len(COMPLIMENTS)}")
+    print("⏳ Для остановки нажми Ctrl+C\n")
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("compliments", start_compliments))
-    application.add_handler(CommandHandler("compliments_off", stop_compliments))
+    app = Application.builder().token(TOKEN).build()
 
-    print("✅ Бот запущен на Render!")
-    application.run_polling(
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("compliments", start_compliments))
+    app.add_handler(CommandHandler("compliments_off", stop_compliments))
+    app.add_handler(CommandHandler("list", list_compliments))
+    app.add_handler(CommandHandler("settings", show_settings))
+    app.add_handler(CommandHandler("cancel", cancel))
+    app.add_handler(MessageHandler(filters=None, callback=handle_message))
+
+    app.add_error_handler(error_handler)
+
+    app.run_polling(
         allowed_updates=Update.ALL_TYPES,
-        drop_pending_updates=True,
-        close_loop=False
+        drop_pending_updates=True
     )
 
 
