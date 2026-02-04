@@ -2,25 +2,17 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from const.compliments import COMPLIMENTS
+from const.prompt import send_prompt
+import openai
+
+load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-
-COMPLIMENTS = [
-    "Ты очень красивая! 🌟",
-    "С тобой я часто улыбаюсь! 😄",
-    "С тобой так хорошо общаться! 💬",
-    "Твоя улыбка поднимает настроение и не только! ☀️",
-    "У тебя прикольные волосы! 🎨",
-    "Твоя атмосфера умиляет! ✨",
-    "Ты молодчинка😇",
-    "ТАК ДЕРЖАТЬ, ты настоящий чемпион!!!🫡"
-    "У тебя прекрасный вкус! 👌",
-    "Ты умнее, чем думаешь! 🧠",
-    "С тобой хочется стать лучше! 💫",
-    "Твоё присутствие делает мир ярче! 🌈",
-    "И все таки у тебя такая красивая грудь, вот бы разглядеть получше! (скидывать в лс создателю💖)"
-]
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+openai.api_key = DEEPSEEK_API_KEY
+openai.api_base = "https://api.deepseek.com"
 
 active_compliments = {}
 
@@ -32,10 +24,38 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - начало моей работы\n"
         "/compliments - начать отправку сообщений\n"
         "/compliments_off - остановить отправку\n"
+        "/list - список комплиментов\n"
         "/settings - настройки\n\n"
-        "Просто напиши мне что-нибудь, и я отвечу, пока что правда только одним соо! 💖"
+        "Просто напиши мне что-нибудь, и я отвечу! 💖"
     )
     await update.message.reply_text(welcome_text)
+
+
+async def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка ИИ-чата"""
+    username = update.effective_chat.username
+    user_message = update.message.text
+
+    # Показываем "печатает..."
+    await update.message.chat.send_action(action="typing")
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": send_prompt(username, user_message)},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+
+        ai_response = response.choices[0].message.content
+        await update.message.reply_text(ai_response)
+
+    except Exception as e:
+        await update.message.reply_text("Извини, что-то пошло не так... 🫣")
+        print(f"Ошибка DeepSeek: {e}")
 
 
 async def start_compliments(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -49,32 +69,35 @@ async def start_compliments(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📝 Милая, введи интервал в секундах (например, 5):\n"
         "Или нажми /cancel для отмены"
     )
-
     context.user_data['waiting_for_interval'] = True
 
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_interval(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка ввода интервала"""
     chat_id = update.effective_chat.id
     text = update.message.text
 
-    if context.user_data.get('waiting_for_interval'):
-        try:
-            interval = int(text)
-            if interval < 2:
-                await update.message.reply_text("❌ Дурашка, интервал должен быть не менее 2 секунд!")
-                return
+    # Проверяем, что мы действительно ждем интервал
+    if not context.user_data.get('waiting_for_interval'):
+        return False
 
-            context.user_data['waiting_for_interval'] = False
-            await update.message.reply_text(f"✅ Рассылка запущена с интервалом {interval} сек!")
+    try:
+        interval = int(text)
+        if interval < 2:
+            await update.message.reply_text("❌ Дурашка, интервал должен быть не менее 2 секунд!")
+            return True
 
-            task = asyncio.create_task(send_compliments(chat_id, interval, context.application))
-            active_compliments[chat_id] = {'task': task, 'interval': interval}
+        context.user_data['waiting_for_interval'] = False
+        await update.message.reply_text(f"✅ Рассылка запущена с интервалом {interval} сек!")
 
-        except ValueError:
-            await update.message.reply_text("❌ Введи число!")
-        return
+        task = asyncio.create_task(send_compliments(chat_id, interval, context.application))
+        active_compliments[chat_id] = {'task': task, 'interval': interval}
+        return True
 
-    await update.message.reply_text(f"Госпожа написала: '{text}'\n\nИспользуй команды из меню! 📋")
+    except ValueError:
+        # Если ввели не число, но мы ждем интервал
+        await update.message.reply_text("❌ Введи число, а не текст!")
+        return True
 
 
 async def send_compliments(chat_id: int, interval: int, app: Application):
@@ -86,7 +109,6 @@ async def send_compliments(chat_id: int, interval: int, app: Application):
                 chat_id=chat_id,
                 text=f"💖 Комплимент {index + 1}:\n{COMPLIMENTS[index]}"
             )
-
             index = (index + 1) % len(COMPLIMENTS)
             await asyncio.sleep(interval)
 
@@ -112,7 +134,6 @@ async def list_compliments(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "📜 Список всех комплиментов:\n\n"
     for i, compliment in enumerate(COMPLIMENTS, 1):
         text += f"{i}. {compliment}\n"
-
     await update.message.reply_text(text)
 
 
@@ -137,6 +158,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нечего отменять 🤷‍♂️")
 
 
+async def universal_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Универсальный обработчик текстовых сообщений"""
+    # 1. Сначала проверяем, не вводится ли интервал
+    if context.user_data.get('waiting_for_interval'):
+        await handle_interval(update, context)
+    else:
+        # 2. Если не интервал, то ИИ-чат
+        await ai_chat(update, context)
+
+
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f"Ошибка: {context.error}")
 
@@ -144,17 +175,24 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 def main():
     print("🚀 Запуск бота...")
     print(f"🤖 Количество комплиментов: {len(COMPLIMENTS)}")
+    print("💬 ИИ чат активирован (DeepSeek)")
     print("⏳ Для остановки нажми Ctrl+C\n")
 
     app = Application.builder().token(TOKEN).build()
 
+    # Обработчики команд
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("compliments", start_compliments))
     app.add_handler(CommandHandler("compliments_off", stop_compliments))
     app.add_handler(CommandHandler("list", list_compliments))
     app.add_handler(CommandHandler("settings", show_settings))
     app.add_handler(CommandHandler("cancel", cancel))
-    app.add_handler(MessageHandler(filters=None, callback=handle_message))
+
+    # УНИВЕРСАЛЬНЫЙ обработчик всех текстовых сообщений
+    app.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND,
+        universal_handler
+    ))
 
     app.add_error_handler(error_handler)
 
