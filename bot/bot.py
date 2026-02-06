@@ -5,14 +5,19 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from const.compliments import COMPLIMENTS
 from const.prompt import send_prompt
-import openai
+from gigachat import GigaChat
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-openai.api_key = DEEPSEEK_API_KEY
-openai.api_base = "https://api.deepseek.com"
+GIGACHAT_API_KEY = os.getenv("GIGACHAT_API_KEY")
+
+giga = GigaChat(
+    credentials=GIGACHAT_API_KEY,
+    verify_ssl_certs=False,
+    model="GigaChat",
+    scope="GIGACHAT_API_PERS"
+)
 
 active_compliments = {}
 
@@ -32,31 +37,43 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка ИИ-чата"""
-    username = update.effective_chat.username
+    """Обработка ИИ-чата через GigaChat"""
     user_message = update.message.text
+    username = update.message.from_user.username
 
-    # Показываем "печатает..."
     await update.message.chat.send_action(action="typing")
 
     try:
-        response = openai.ChatCompletion.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": send_prompt(username, user_message)},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7,
-            max_tokens=500
-        )
+        # Получаем промпт
+        system_prompt = send_prompt(username, user_message)
 
+        # Формируем полный запрос
+        full_prompt = f"{system_prompt}\n\nПользователь: {user_message}\nБот:"
+
+        # Отправляем запрос в GigaChat
+        response = giga.chat(full_prompt)
+
+        # Извлекаем ответ
         ai_response = response.choices[0].message.content
-        await update.message.reply_text(ai_response)
+
+        # Очищаем ответ (убираем возможные префиксы)
+        if ai_response.startswith("Бот:"):
+            ai_response = ai_response[4:].strip()
+
+        await update.message.reply_text(ai_response[:4000])  # Ограничение Telegram
 
     except Exception as e:
-        await update.message.reply_text("Извини, что-то пошло не так... 🫣")
-        print(f"Ошибка DeepSeek: {e}")
+        print(f"Ошибка GigaChat: {e}")
 
+        # Фоллбэк ответы
+        import random
+        fallback_responses = [
+            f"Привет, {username}! Как настроение? 💖",
+            f"Рада тебя видеть, {username}! 🌟",
+            f"{username}, ты сегодня прекрасна! ✨",
+            "Как твой день проходит? 💫"
+        ]
+        await update.message.reply_text(random.choice(fallback_responses))
 
 async def start_compliments(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
