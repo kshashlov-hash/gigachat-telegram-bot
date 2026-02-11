@@ -1,3 +1,4 @@
 uvicorn
 starlette
 gigachat
+flask
