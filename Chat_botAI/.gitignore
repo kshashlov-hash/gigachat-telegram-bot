@@ -1,0 +1,21 @@
+# Виртуальное окружение
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Переменные окружения
+.env
+*.env
+
+# IDE
+.vscode/
+.idea/
+
+# Логи
+*.log
+
+# Системные
+.DS_Store
+Thumbs.db
