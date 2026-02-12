@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем весь проект
 COPY . .
+COPY render_fix.py .
 
 RUN mkdir -p prompts
 
