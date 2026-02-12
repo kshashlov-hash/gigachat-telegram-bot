@@ -7,13 +7,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
-from aiogram.types import Message, BotCommand, Update
+from aiogram.types import Message, BotCommand
 from langchain_gigachat.chat_models import GigaChat
-from starlette.applications import Starlette
-from starlette.routing import Route
-from starlette.requests import Request
-from starlette.responses import Response, PlainTextResponse
-import uvicorn
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -25,17 +20,6 @@ load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TOKEN")
 GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
-PORT = int(os.environ.get("PORT", 8000))
-RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL")
-WEBHOOK_PATH = "/webhook"
-
-# Проверка, что все переменные загружены
-if not TELEGRAM_TOKEN:
-    raise ValueError("❌ TOKEN не задан!")
-if not GIGACHAT_CRED:
-    raise ValueError("❌ GIGACHAT_API_KEY не задан!")
-if not RENDER_URL:
-    raise ValueError("❌ RENDER_EXTERNAL_URL не задан!")
 
 # ------------------------------------------------------------
 # ИНИЦИАЛИЗАЦИЯ
@@ -83,7 +67,7 @@ async def set_commands():
         BotCommand(command="help", description="ℹ️ Помощь"),
     ]
     await bot.set_my_commands(commands)
-    logging.info("✅ Меню команд установлено!")
+    print("✅ Меню команд установлено!")
 
 
 # ------------------------------------------------------------
@@ -91,10 +75,7 @@ async def set_commands():
 # ------------------------------------------------------------
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    await message.answer(
-        "👋 Я бот на GigaChat от создателя milk.\n"
-        "Напиши /ask вопрос или упомяни меня @DeadPIHTOaibot"
-    )
+    await message.answer("Я бот от создателя milk. Упомяни меня @DeadPIHTOaibot или напиши /ask вопрос")
 
 
 @dp.message(Command("reset"))
@@ -108,11 +89,11 @@ async def cmd_reset(message: Message):
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
     help_text = """\
-🤖 <b>Dead Pihto — умный ассистент на GigaChat</b>
+🤖 <b>Dead Pihto — умный ассистент</b>
 
 <b>Как использовать:</b>
-• /ask <i>вопрос</i> — задать вопрос
-• @DeadPIHTOaibot <i>вопрос</i> — обратиться в группе
+• /ask вопрос — задать вопрос
+• @DeadPIHTOaibot вопрос — обратиться в группе
 • Ответь на моё сообщение — я пойму контекст
 • /reset — сбросить историю
 
@@ -121,10 +102,6 @@ async def cmd_help(message: Message):
 /ask — задать вопрос
 /reset — сбросить память
 /help — эта справка
-
-<b>Особенности:</b>
-• Помню последние 5 сообщений
-• Работаю в личке и группах
 """
     await message.answer(help_text, parse_mode="HTML")
 
@@ -191,63 +168,17 @@ async def ask_gigachat(message: Message, query: str):
         await message.reply(answer)
 
     except Exception as e:
-        logging.error(f"Ошибка в ask_gigachat: {e}")
+        logging.error(f"Ошибка: {e}")
         await message.reply("❌ Ошибка при запросе. Попробуй позже.")
 
 
 # ------------------------------------------------------------
-# WEBHOOK
-# ------------------------------------------------------------
-async def webhook(request: Request) -> Response:
-    """Принимает обновления от Telegram"""
-    try:
-        update = Update(**await request.json())
-        await dp.feed_update(bot, update)
-        return Response()
-    except Exception as e:
-        logging.error(f"Ошибка webhook: {e}")
-        return Response(status_code=500)
-
-
-async def healthcheck(request: Request) -> PlainTextResponse:
-    """Проверка здоровья сервера"""
-    return PlainTextResponse("OK")
-
-
-# Создаём Starlette приложение
-app = Starlette(routes=[
-    Route(WEBHOOK_PATH, webhook, methods=["POST"]),
-    Route("/", healthcheck, methods=["GET"]),
-    Route("/health", healthcheck, methods=["GET"]),
-])
-
-
-# ------------------------------------------------------------
-# ЗАПУСК (ТОЛЬКО WEBHOOK, НИКАКОГО POLLING)
+# ЗАПУСК (ТОЛЬКО POLLING, РАБОТАЕТ ЛОКАЛЬНО)
 # ------------------------------------------------------------
 async def main():
-    """Запуск бота в режиме webhook"""
-    logging.info(f"🚀 Запуск бота на порту {PORT}")
-    logging.info(f"📎 Webhook URL: {RENDER_URL}{WEBHOOK_PATH}")
-
-    # Устанавливаем команды меню
     await set_commands()
-
-    # Устанавливаем webhook
-    webhook_url = f"{RENDER_URL}{WEBHOOK_PATH}"
-    await bot.set_webhook(webhook_url)
-    logging.info(f"✅ Webhook установлен на {webhook_url}")
-
-    # Запускаем сервер
-    config = uvicorn.Config(
-        app,
-        host="0.0.0.0",
-        port=PORT,
-        log_level="info",
-        access_log=True
-    )
-    server = uvicorn.Server(config)
-    await server.serve()
+    print("🚀 Бот запущен и слушает сообщения...")
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
