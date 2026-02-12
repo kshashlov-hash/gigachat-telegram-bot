@@ -9,6 +9,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
 from aiogram.types import Message, BotCommand
 from langchain_gigachat.chat_models import GigaChat
+import http.server
+import socketserver
+from threading import Thread
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -172,6 +175,25 @@ async def ask_gigachat(message: Message, query: str):
         await message.reply("❌ Ошибка при запросе. Попробуй позже.")
 
 
+def run_health_server():
+    """Минимальный HTTP-сервер для Render и UptimeRobot"""
+    port = int(os.environ.get("PORT", 10000))
+    handler = http.server.SimpleHTTPRequestHandler
+
+    class HealthHandler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == '/health':
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'OK')
+            else:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'Bot is running')
+
+    with socketserver.TCPServer(("0.0.0.0", port), HealthHandler) as httpd:
+        print(f"✅ Health server running on port {port}")
+        httpd.serve_forever()
 # ------------------------------------------------------------
 # ЗАПУСК (ТОЛЬКО POLLING, РАБОТАЕТ ЛОКАЛЬНО)
 # ------------------------------------------------------------
