@@ -29,6 +29,14 @@ PORT = int(os.environ.get("PORT", 8000))
 RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL")
 WEBHOOK_PATH = "/webhook"
 
+# Проверка, что все переменные загружены
+if not TELEGRAM_TOKEN:
+    raise ValueError("❌ TOKEN не задан!")
+if not GIGACHAT_CRED:
+    raise ValueError("❌ GIGACHAT_API_KEY не задан!")
+if not RENDER_URL:
+    raise ValueError("❌ RENDER_EXTERNAL_URL не задан!")
+
 # ------------------------------------------------------------
 # ИНИЦИАЛИЗАЦИЯ
 # ------------------------------------------------------------
@@ -51,16 +59,13 @@ logging.basicConfig(level=logging.INFO)
 # ЗАГРУЗКА СИСТЕМНОГО ПРОМПТА
 # ------------------------------------------------------------
 def load_system_prompt(prompt_name: str = "default.txt") -> dict:
-    """Загружает системный промпт из файла в папке prompts"""
     prompt_path = Path("prompts") / prompt_name
-
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
     except FileNotFoundError:
         content = "Ты — полезный ассистент. Отвечай кратко и по делу."
         logging.warning(f"Промпт {prompt_name} не найден, использую запасной")
-
     return {"role": "system", "content": content}
 
 
@@ -70,7 +75,7 @@ SYSTEM_PROMPT = load_system_prompt("default.txt")
 # ------------------------------------------------------------
 # МЕНЮ КОМАНД
 # ------------------------------------------------------------
-async def on_startup(bot: Bot):
+async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
         BotCommand(command="ask", description="❓ Задать вопрос"),
@@ -78,10 +83,7 @@ async def on_startup(bot: Bot):
         BotCommand(command="help", description="ℹ️ Помощь"),
     ]
     await bot.set_my_commands(commands)
-    print("✅ Меню команд установлено!")
-
-
-dp.startup.register(on_startup)
+    logging.info("✅ Меню команд установлено!")
 
 
 # ------------------------------------------------------------
@@ -89,7 +91,10 @@ dp.startup.register(on_startup)
 # ------------------------------------------------------------
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    await message.answer("Я бот от создателя milk. Упомяни меня @DeadPIHTOaibot или напиши /ask вопрос")
+    await message.answer(
+        "👋 Я бот на GigaChat от создателя milk.\n"
+        "Напиши /ask вопрос или упомяни меня @DeadPIHTOaibot"
+    )
 
 
 @dp.message(Command("reset"))
@@ -97,20 +102,19 @@ async def cmd_reset(message: Message):
     chat_id = message.chat.id
     user_id = message.from_user.id
     conversation_history.clear_history(chat_id, user_id)
-    await message.answer("🧹 История диалога очищена! Я забыл всё, что мы обсуждали.")
+    await message.answer("🧹 История диалога очищена!")
 
 
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
-    print("🔥 Команда /help вызвана!")
     help_text = """\
-🤖 <b>dead pihto — умный ассистент от создателя milk для публичного/личного чата</b>
+🤖 <b>Dead Pihto — умный ассистент на GigaChat</b>
 
 <b>Как использовать:</b>
 • /ask <i>вопрос</i> — задать вопрос
-• @DeadPIHTOaibot <i>вопрос</i> — обратиться в групповом чате
-• Ответь на моё сообщение прямо в чате — я пойму контекст
-• /reset — сбросить историю диалога
+• @DeadPIHTOaibot <i>вопрос</i> — обратиться в группе
+• Ответь на моё сообщение — я пойму контекст
+• /reset — сбросить историю
 
 <b>Команды:</b>
 /start — приветствие
@@ -119,11 +123,8 @@ async def cmd_help(message: Message):
 /help — эта справка
 
 <b>Особенности:</b>
-• Помню последние +-5 сообщений
-• Не помню ничего через 30 минут (старость нерадость)
-• Работаю в личке и группах, фотки пока что не умею обрабатывать
-
-Желаю удачного пользования, мой функционал обязательно будет расти ❤️
+• Помню последние 5 сообщений
+• Работаю в личке и группах
 """
     await message.answer(help_text, parse_mode="HTML")
 
@@ -144,31 +145,20 @@ async def cmd_ask(message: Message):
 async def handle_mention(message: Message):
     bot_username = (await bot.me()).username
     bot_id = (await bot.me()).id
-    text = message.text or message.caption or ""
+    text = message.text or ""
 
-    # Ответ на сообщение бота
+    # 1. Ответ на сообщение бота
     if message.reply_to_message and message.reply_to_message.from_user.id == bot_id:
         if text.strip():
             await ask_gigachat(message, text.strip())
         return
 
-    # Текстовое упоминание @botname
+    # 2. Упоминание @botname
     if f"@{bot_username}" in text:
         query = text.replace(f"@{bot_username}", "", 1).strip()
         if query:
             await ask_gigachat(message, query)
         return
-
-    # Упоминание через entities
-    if message.entities:
-        for entity in message.entities:
-            if entity.type == "mention":
-                mention = text[entity.offset:entity.offset + entity.length]
-                if mention == f"@{bot_username}":
-                    query = (text[:entity.offset] + text[entity.offset + entity.length:]).strip()
-                    if query:
-                        await ask_gigachat(message, query)
-                    return
 
 
 # ------------------------------------------------------------
@@ -181,38 +171,46 @@ async def ask_gigachat(message: Message, query: str):
     await bot.send_chat_action(chat_id, "typing")
 
     try:
+        # Собираем сообщения
         messages = [SYSTEM_PROMPT]
         messages.extend(conversation_history.get_history(chat_id, user_id))
         messages.append({"role": "user", "content": query})
 
+        # Запрос к GigaChat
         response = giga.invoke(messages)
         answer = response.content
 
+        # Сохраняем в историю
         conversation_history.add_message(chat_id, user_id, "user", query)
         conversation_history.add_message(chat_id, user_id, "assistant", answer)
 
+        # Обрезаем длинные ответы
         if len(answer) > 4000:
             answer = answer[:4000] + "...\n\n(ответ обрезан из-за лимита)"
 
         await message.reply(answer)
 
     except Exception as e:
-        logging.error(f"Ошибка: {e}")
-        await message.reply("Ошибка при запросе к GigaChat. Попробуй позже.")
+        logging.error(f"Ошибка в ask_gigachat: {e}")
+        await message.reply("❌ Ошибка при запросе. Попробуй позже.")
 
 
 # ------------------------------------------------------------
 # WEBHOOK
 # ------------------------------------------------------------
 async def webhook(request: Request) -> Response:
-    """Принимаем обновления от Telegram"""
-    update = Update(**await request.json())
-    await dp.feed_update(bot, update)
-    return Response()
+    """Принимает обновления от Telegram"""
+    try:
+        update = Update(**await request.json())
+        await dp.feed_update(bot, update)
+        return Response()
+    except Exception as e:
+        logging.error(f"Ошибка webhook: {e}")
+        return Response(status_code=500)
 
 
 async def healthcheck(request: Request) -> PlainTextResponse:
-    """Для проверки, что сервер жив"""
+    """Проверка здоровья сервера"""
     return PlainTextResponse("OK")
 
 
@@ -220,22 +218,34 @@ async def healthcheck(request: Request) -> PlainTextResponse:
 app = Starlette(routes=[
     Route(WEBHOOK_PATH, webhook, methods=["POST"]),
     Route("/", healthcheck, methods=["GET"]),
+    Route("/health", healthcheck, methods=["GET"]),
 ])
 
 
 # ------------------------------------------------------------
-# ЗАПУСК
+# ЗАПУСК (ТОЛЬКО WEBHOOK, НИКАКОГО POLLING)
 # ------------------------------------------------------------
 async def main():
-    if not RENDER_URL:
-        logging.error("RENDER_EXTERNAL_URL не задан! Бот не запустится.")
-        return
+    """Запуск бота в режиме webhook"""
+    logging.info(f"🚀 Запуск бота на порту {PORT}")
+    logging.info(f"📎 Webhook URL: {RENDER_URL}{WEBHOOK_PATH}")
 
+    # Устанавливаем команды меню
+    await set_commands()
+
+    # Устанавливаем webhook
     webhook_url = f"{RENDER_URL}{WEBHOOK_PATH}"
     await bot.set_webhook(webhook_url)
     logging.info(f"✅ Webhook установлен на {webhook_url}")
 
-    config = uvicorn.Config(app, host="0.0.0.0", port=PORT, log_level="info")
+    # Запускаем сервер
+    config = uvicorn.Config(
+        app,
+        host="0.0.0.0",
+        port=PORT,
+        log_level="info",
+        access_log=True
+    )
     server = uvicorn.Server(config)
     await server.serve()
 
