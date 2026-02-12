@@ -198,8 +198,15 @@ def run_health_server():
 # ЗАПУСК (ТОЛЬКО POLLING, РАБОТАЕТ ЛОКАЛЬНО)
 # ------------------------------------------------------------
 async def main():
+    # Запускаем HTTP-сервер для Render и UptimeRobot
     Thread(target=run_health_server, daemon=True).start()
+
+    await asyncio.sleep(2)
+
+    await bot.delete_webhook(drop_pending_updates=True)
+
     await set_commands()
+
     print("🚀 Бот запущен и слушает сообщения...")
     await dp.start_polling(bot)
 
