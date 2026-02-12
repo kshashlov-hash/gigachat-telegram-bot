@@ -198,6 +198,7 @@ def run_health_server():
 # ЗАПУСК (ТОЛЬКО POLLING, РАБОТАЕТ ЛОКАЛЬНО)
 # ------------------------------------------------------------
 async def main():
+    Thread(target=run_health_server, daemon=True).start()
     await set_commands()
     print("🚀 Бот запущен и слушает сообщения...")
     await dp.start_polling(bot)
