@@ -12,6 +12,7 @@ from langchain_gigachat.chat_models import GigaChat
 import http.server
 import socketserver
 from threading import Thread
+from utils.mat import get_swear
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -94,17 +95,15 @@ async def cmd_help(message: Message):
     help_text = """\
 🤖 <b>Dead Pihto — умный ассистент</b>
 
-<b>Как использовать:</b>
+<b>👀Как использовать:</b>
+• /start — приветствие бота
 • /ask вопрос — задать вопрос
 • @DeadPIHTOaibot вопрос — обратиться в группе
 • Ответь на моё сообщение — я пойму контекст
 • /reset — сбросить историю
-
-<b>Команды:</b>
-/start — приветствие
-/ask — задать вопрос
-/reset — сбросить память
-/help — эта справка
+• /help — эта справка
+Приятного пользования 💥
+Создатель: milk @thesunissad
 """
     await message.answer(help_text, parse_mode="HTML")
 
@@ -113,7 +112,7 @@ async def cmd_help(message: Message):
 async def cmd_ask(message: Message):
     query = message.text.replace("/ask", "", 1).strip()
     if not query:
-        await message.answer("Напиши вопрос после /ask")
+        await message.answer("Напиши свой вопрос после команды /ask")
         return
     await ask_gigachat(message, query)
 
@@ -159,6 +158,11 @@ async def ask_gigachat(message: Message, query: str):
         # Запрос к GigaChat
         response = giga.invoke(messages)
         answer = response.content
+
+        # 🔥 ДОБАВЛЯЕМ ПСЕВДО-МАТ С ВЕРОЯТНОСТЬЮ 7%
+        swear = get_swear(probability=0.07)  # 7% шанс
+        if swear:
+            answer = f"{swear} {answer}"
 
         # Сохраняем в историю
         conversation_history.add_message(chat_id, user_id, "user", query)
