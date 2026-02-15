@@ -122,15 +122,21 @@ async def cmd_ask(message: Message):
 # ------------------------------------------------------------
 @dp.message()
 async def handle_bad_words(message: Message):
-    """Проверяет сообщения на мат и реагирует"""
+    """Реагирует на мат ТОЛЬКО если это ответ на сообщение бота"""
     text = message.text or message.caption or ""
+    bot_id = (await bot.me()).id
 
-    if contains_bad_words(text):
+    # Проверяем: это ответ на сообщение бота И есть мат
+    if (message.reply_to_message and
+            message.reply_to_message.from_user.id == bot_id and
+            contains_bad_words(text)):
         reaction = get_bad_word_reaction()
         await message.reply(reaction)
-        # Логируем (необязательно)
-        print(f"⚠️ Мат от {message.from_user.first_name}: {text[:50]}...")
-        return  # ВАЖНО: бот НЕ отвечает на вопрос после мата
+        print(f"⚠️ Мат в ответе от {message.from_user.first_name}: {text[:50]}...")
+        return  # мат обработан — выходим
+
+    # Если это не мат в ответ боту — передаем дальше
+    await handle_mention(message)
 
 @dp.message()
 async def handle_mention(message: Message):
