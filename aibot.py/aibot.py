@@ -159,8 +159,8 @@ async def ask_gigachat(message: Message, query: str):
         response = giga.invoke(messages)
         answer = response.content
 
-        # 🔥 ДОБАВЛЯЕМ ПСЕВДО-МАТ С ВЕРОЯТНОСТЬЮ 7%
-        swear = get_swear(probability=0.07)  # 7% шанс
+        # 🔥 ДОБАВЛЯЕМ ПСЕВДО-МАТ С ВЕРОЯТНОСТЬЮ 25%
+        swear = get_swear(probability=0.55)  # 7% шанс
         if swear:
             answer = f"{swear} {answer}"
 
