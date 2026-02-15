@@ -12,7 +12,7 @@ from langchain_gigachat.chat_models import GigaChat
 import http.server
 import socketserver
 from threading import Thread
-from utils.mat import get_swear
+from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -120,6 +120,18 @@ async def cmd_ask(message: Message):
 # ------------------------------------------------------------
 # ОБРАБОТКА УПОМИНАНИЙ И ОТВЕТОВ
 # ------------------------------------------------------------
+@dp.message()
+async def handle_bad_words(message: Message):
+    """Проверяет сообщения на мат и реагирует"""
+    text = message.text or message.caption or ""
+
+    if contains_bad_words(text):
+        reaction = get_bad_word_reaction()
+        await message.reply(reaction)
+        # Логируем (необязательно)
+        print(f"⚠️ Мат от {message.from_user.first_name}: {text[:50]}...")
+        return  # ВАЖНО: бот НЕ отвечает на вопрос после мата
+
 @dp.message()
 async def handle_mention(message: Message):
     bot_username = (await bot.me()).username
