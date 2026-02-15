@@ -178,7 +178,7 @@ async def ask_gigachat(message: Message, query: str):
         answer = response.content
 
         # 🔥 ДОБАВЛЯЕМ ПСЕВДО-МАТ С ВЕРОЯТНОСТЬЮ 25%
-        swear = get_swear(probability=0.55)  # 7% шанс
+        swear = get_swear(probability=0.10)  # 7% шанс
         if swear:
             answer = f"{swear} {answer}"
 
