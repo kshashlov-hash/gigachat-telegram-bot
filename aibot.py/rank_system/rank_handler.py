@@ -39,6 +39,7 @@ def get_target_rank(total_questions):
 
 @router.message(Command("askrank"))
 async def cmd_askrank(message: types.Message, state: FSMContext):
+    print(f"🔥 /askrank получена в чате {message.chat.id}")
     if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
         # Можно просто игнорировать или ответить один раз
         # await message.answer("❌ Эта команда работает только в специальном чате.")
