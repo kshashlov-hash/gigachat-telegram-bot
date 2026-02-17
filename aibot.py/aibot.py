@@ -157,6 +157,9 @@ async def handle_mention(message: Message):
             await ask_gigachat(message, query)
         return
 
+# Подключаем роутер ранговой системы
+        from rank_system.rank_handler import router as rank_router
+        dp.include_router(rank_router)
 
 # ------------------------------------------------------------
 # ОСНОВНАЯ ФУНКЦИЯ ЗАПРОСА К GIGACHAT
@@ -216,6 +219,7 @@ def run_health_server():
     with socketserver.TCPServer(("0.0.0.0", port), HealthHandler) as httpd:
         print(f"✅ Health server running on port {port}")
         httpd.serve_forever()
+
 # ------------------------------------------------------------
 # ЗАПУСК (ТОЛЬКО POLLING, РАБОТАЕТ ЛОКАЛЬНО)
 # ------------------------------------------------------------
