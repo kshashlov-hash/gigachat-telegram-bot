@@ -68,6 +68,10 @@ async def set_commands():
         BotCommand(command="ask", description="❓ Задать вопрос"),
         BotCommand(command="reset", description="🔄 Сбросить историю"),
         BotCommand(command="help", description="ℹ️ Помощь"),
+        BotCommand(command="askrank", description="🚀 Запустить бота"),
+        BotCommand(command="myrank", description="❓ Задать вопрос"),
+        BotCommand(command="exam", description="🔄 Сбросить историю"),
+        BotCommand(command="exam_cancel", description="ℹ️ Помощь"),
     ]
     await bot.set_my_commands(commands)
     print("✅ Меню команд установлено!")
