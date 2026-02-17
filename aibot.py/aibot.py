@@ -13,6 +13,7 @@ import http.server
 import socketserver
 from threading import Thread
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
+from rank_system.database import ensure_owner_rank
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -229,6 +230,7 @@ async def main():
 
     await asyncio.sleep(2)
 
+    ensure_owner_rank()
     await bot.delete_webhook(drop_pending_updates=True)
 
     await set_commands()

@@ -3,7 +3,7 @@ from datetime import date
 import os
 
 DB_PATH = "rank_data.db"
-
+OWNER_ID = 955677835
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -139,6 +139,23 @@ def update_exam_attempt(user_id, target_rank, passed=False):
     conn.commit()
     conn.close()
 
+def ensure_owner_rank():
+    """Устанавливает владельцу ранг Zero, если он есть в БД"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    # Проверяем, есть ли владелец в БД
+    cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (OWNER_ID,))
+    if cursor.fetchone():
+        # Обновляем ранг на Zero
+        cursor.execute("UPDATE users SET rank = 'Zero' WHERE user_id = ?", (OWNER_ID,))
+    else:
+        # Создаём запись с рангом Zero
+        cursor.execute("""
+            INSERT INTO users (user_id, username, first_name, rank, questions_asked, questions_today)
+            VALUES (?, 'owner', 'Owner', 'Zero', 0, 0)
+        """, (OWNER_ID,))
+    conn.commit()
+    conn.close()
 
 # Инициализация
 init_db()
