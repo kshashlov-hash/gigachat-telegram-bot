@@ -14,6 +14,7 @@ import socketserver
 from threading import Thread
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 from rank_system.database import ensure_owner_rank
+from utils.ask_gigachat import init_gigachat, ask_gigachat
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -179,40 +180,6 @@ async def global_message_handler(message: Message):
 # ------------------------------------------------------------
 # ОСНОВНАЯ ФУНКЦИЯ ЗАПРОСА К GIGACHAT
 # ------------------------------------------------------------
-async def ask_gigachat(message: Message, query: str):
-    chat_id = message.chat.id
-    user_id = message.from_user.id
-
-    await bot.send_chat_action(chat_id, "typing")
-
-    try:
-        # Собираем сообщения
-        messages = [SYSTEM_PROMPT]
-        messages.extend(conversation_history.get_history(chat_id, user_id))
-        messages.append({"role": "user", "content": query})
-
-        # Запрос к GigaChat
-        response = giga.invoke(messages)
-        answer = response.content
-
-        # 🔥 ДОБАВЛЯЕМ ПСЕВДО-МАТ С ВЕРОЯТНОСТЬЮ 25%
-        swear = get_swear(probability=0.10)  # 7% шанс
-        if swear:
-            answer = f"{swear} {answer}"
-
-        # Сохраняем в историю
-        conversation_history.add_message(chat_id, user_id, "user", query)
-        conversation_history.add_message(chat_id, user_id, "assistant", answer)
-
-        # Обрезаем длинные ответы
-        if len(answer) > 4000:
-            answer = answer[:4000] + "...\n\n(ответ обрезан из-за лимита)"
-
-        await message.reply(answer)
-
-    except Exception as e:
-        logging.error(f"Ошибка: {e}")
-        await message.reply("❌ Ошибка при запросе. Попробуй позже.")
 
 
 def run_health_server():

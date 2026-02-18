@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(__file__))
 # Теперь импорты будут работать
 import database as db
 import exam_engine as exam
+from ..utils.ask_gigachat import ask_gigachat
 
 # ID чата (из переменных окружения Render)
 TARGET_CHAT_ID = int(os.getenv("RANK_CHAT_ID", "0"))
@@ -108,6 +109,7 @@ async def cmd_askrank(message: types.Message, state: FSMContext):
 
     # Если экзамен не нужен — просто подтверждаем приём вопроса
     await message.answer(f"✅ Вопрос принят! (Всего: {new_total}, сегодня: {today_q + 1})")
+    await ask_gigachat(message, query)
 
 # -------------------- КОМАНДА /myrank --------------------
 @router.message(Command("myrank"))
