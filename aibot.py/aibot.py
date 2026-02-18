@@ -68,12 +68,12 @@ def load_system_prompt(prompt_name: str = "default.txt") -> dict:
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-    except FileNotFoundError:
-        content = "Ты — полезный ассистент. Отвечай кратко и по делу."
-        logging.warning(f"Промпт {prompt_name} не найден, использую запасной")
+    except Exception as e:
+        logging.error(f"Ошибка загрузки промпта: {e}")
+        content = "Ты — полезный ассистент."
     return {"role": "system", "content": content}
 
-
+# Используй СВОЮ функцию, а не импортированную load_prompt
 SYSTEM_PROMPT = load_system_prompt("default.txt")
 
 # ------------------------------------------------------------
