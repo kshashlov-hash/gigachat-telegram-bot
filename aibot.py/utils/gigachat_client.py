@@ -1,18 +1,10 @@
-import os
 import sys
 from pathlib import Path
 
-# Жёстко добавляем путь к корню проекта
-current_dir = Path(__file__).resolve().parent  # папка utils
-project_root = current_dir.parent  # корень проекта
+# Добавляем путь к корню проекта
+root_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(root_dir))
 
-# Добавляем путь к папке utils
-utils_path = current_dir
-if str(utils_path) not in sys.path:
-    sys.path.insert(0, str(utils_path))
-
-# Теперь импортируем напрямую
-from history import conversation_history
 import logging
 
 # Единый экземпляр (будет инициализирован из main)
@@ -25,23 +17,29 @@ def init_gigachat(giga_instance, system_prompt_dict):
     _giga = giga_instance
     _system_prompt = system_prompt_dict
 
+def get_history():
+    """Ленивый импорт истории (чтобы избежать циклических импортов)"""
+    from history import conversation_history
+    return conversation_history
+
 async def ask_gigachat(message, query):
-    """Функция для ответа через GigaChat (не зависит от aibot)"""
+    """Функция для ответа через GigaChat"""
     chat_id = message.chat.id
     user_id = message.from_user.id
 
     await message.bot.send_chat_action(chat_id, "typing")
 
     try:
+        history = get_history()
         messages = [_system_prompt]
-        messages.extend(conversation_history.get_history(chat_id, user_id))
+        messages.extend(history.get_history(chat_id, user_id))
         messages.append({"role": "user", "content": query})
 
         response = _giga.invoke(messages)
         answer = response.content
 
-        conversation_history.add_message(chat_id, user_id, "user", query)
-        conversation_history.add_message(chat_id, user_id, "assistant", answer)
+        history.add_message(chat_id, user_id, "user", query)
+        history.add_message(chat_id, user_id, "assistant", answer)
 
         if len(answer) > 4000:
             answer = answer[:4000] + "..."
