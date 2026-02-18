@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message, BotCommand
-from langchain_core.prompts import load_prompt
 from langchain_gigachat.chat_models import GigaChat
 import http.server
 import socketserver
@@ -46,12 +45,8 @@ giga = GigaChat(
     scope="GIGACHAT_API_PERS"
 )
 
-# Теперь загружаем промпт
-SYSTEM_PROMPT = load_prompt("default.txt")
-
 # И ТОЛЬКО ТЕПЕРЬ передаем их в dp
 dp['giga'] = giga
-dp['sys_prompt'] = SYSTEM_PROMPT
 
 # Теперь подключаем роутер (он увидит данные из dp)
 print("⚙️ Попытка подключения rank_router...")
