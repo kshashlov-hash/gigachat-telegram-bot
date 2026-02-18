@@ -137,10 +137,19 @@ async def cmd_ask(message: Message):
 # ------------------------------------------------------------
 # ОБРАБОТКА УПОМИНАНИЙ И ОТВЕТОВ
 # ------------------------------------------------------------
+# В aibot.py
+
 @dp.message()
 async def handle_bad_words(message: Message):
     """Реагирует на мат ТОЛЬКО если это ответ на сообщение бота"""
     text = message.text or message.caption or ""
+
+    # --- ДОБАВИТЬ ЭТУ ПРОВЕРКУ ---
+    # Если сообщение начинается с /, считаем это командой и не обрабатываем здесь
+    if text.strip().startswith("/"):
+        return
+    # -----------------------------
+
     bot_id = (await bot.me()).id
 
     # Проверяем: это ответ на сообщение бота И есть мат
@@ -155,11 +164,17 @@ async def handle_bad_words(message: Message):
     # Если это не мат в ответ боту — передаем дальше
     await handle_mention(message)
 
+
 @dp.message()
 async def handle_mention(message: Message):
+    # --- И ЗДЕСЬ ТОЖЕ (на всякий случай) ---
+    text = message.text or ""
+    if text.strip().startswith("/"):
+        return
+    # ---------------------------------------
+
     bot_username = (await bot.me()).username
     bot_id = (await bot.me()).id
-    text = message.text or ""
 
     # 1. Ответ на сообщение бота
     if message.reply_to_message and message.reply_to_message.from_user.id == bot_id:
