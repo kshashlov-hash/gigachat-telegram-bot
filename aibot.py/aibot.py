@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message, BotCommand
 from langchain_gigachat.chat_models import GigaChat
@@ -36,7 +36,9 @@ GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
+print("⚙️ Попытка подключения rank_router...")
 dp.include_router(rank_router)
+print(f"✅ Роутер rank_router подключен. Список команд в роутере активен.", rank_router)
 
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
@@ -139,56 +141,34 @@ async def cmd_ask(message: Message):
 # ------------------------------------------------------------
 # В aibot.py
 
-@dp.message()
-async def handle_bad_words(message: Message):
-    """Реагирует на мат ТОЛЬКО если это ответ на сообщение бота"""
+@dp.message(~F.text.startswith("/"))
+async def global_message_handler(message: Message):
     text = message.text or message.caption or ""
-
-    # --- ДОБАВИТЬ ЭТУ ПРОВЕРКУ ---
-    # Если сообщение начинается с /, считаем это командой и не обрабатываем здесь
-    if text.strip().startswith("/"):
-        return
-    # -----------------------------
-
     bot_id = (await bot.me()).id
-
-    # Проверяем: это ответ на сообщение бота И есть мат
-    if (message.reply_to_message and
-            message.reply_to_message.from_user.id == bot_id and
-            contains_bad_words(text)):
-        reaction = get_bad_word_reaction()
-        await message.reply(reaction)
-        print(f"⚠️ Мат в ответе от {message.from_user.first_name}: {text[:50]}...")
-        return  # мат обработан — выходим
-
-    # Если это не мат в ответ боту — передаем дальше
-    await handle_mention(message)
-
-
-@dp.message()
-async def handle_mention(message: Message):
-    # --- И ЗДЕСЬ ТОЖЕ (на всякий случай) ---
-    text = message.text or ""
-    if text.strip().startswith("/"):
-        return
-    # ---------------------------------------
-
     bot_username = (await bot.me()).username
-    bot_id = (await bot.me()).id
 
-    # 1. Ответ на сообщение бота
+    # 1. Сначала логируем для отладки
+    print(f"📥 ТЕКСТ: '{text[:30]}...' | chat_id={message.chat.id}")
+
+    # 2. Логика мата (только если это ответ на сообщение бота)
     if message.reply_to_message and message.reply_to_message.from_user.id == bot_id:
+        if contains_bad_words(text):
+            reaction = get_bad_word_reaction()
+            await message.reply(reaction)
+            print(f"⚠️ Мат обработан.")
+            return
+
+        # Если это просто текстовый ответ боту без мата — отвечаем через GigaChat
         if text.strip():
             await ask_gigachat(message, text.strip())
-        return
+            return
 
-    # 2. Упоминание @botname
+    # 3. Логика упоминания @botname
     if f"@{bot_username}" in text:
         query = text.replace(f"@{bot_username}", "", 1).strip()
         if query:
             await ask_gigachat(message, query)
         return
-
 
 
 

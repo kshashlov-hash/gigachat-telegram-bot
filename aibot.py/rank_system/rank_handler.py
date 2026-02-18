@@ -117,6 +117,9 @@ async def cmd_askrank(message: types.Message, state: FSMContext):
 # --- Команда для просмотра своего ранга ---
 @router.message(Command("myrank"))
 async def cmd_myrank(message: types.Message):
+    print(f"--- Вход в команду /myrank ---")
+    print(f"Чат ID сообщения: {message.chat.id}")
+    print(f"Ожидаемый TARGET_CHAT_ID: {TARGET_CHAT_ID}")
     if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
         # Можно просто игнорировать или ответить один раз
         # await message.answer("❌ Эта команда работает только в специальном чате.")
