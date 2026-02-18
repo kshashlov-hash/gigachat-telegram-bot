@@ -19,6 +19,9 @@ from rank_system.rank_handler import cmd_askrank, cmd_exam, cmd_myrank, cmd_exam
 # Импорт твоей истории
 from utils.history import conversation_history
 
+from rank_system.rank_handler import router as rank_router
+
+
 # ------------------------------------------------------------
 # ЗАГРУЗКА ПЕРЕМЕННЫХ
 # ------------------------------------------------------------
@@ -32,6 +35,8 @@ GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
 # ------------------------------------------------------------
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
+
+dp.include_router(rank_router)
 
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
@@ -77,8 +82,7 @@ async def set_commands():
     await bot.set_my_commands(commands)
     print("✅ Меню команд установлено!")
 
-from rank_system.rank_handler import router as rank_router
-dp.include_router(rank_router)
+
 
 # ------------------------------------------------------------
 # КОМАНДЫ БОТА
