@@ -1,11 +1,15 @@
 import os
+import sys
 import logging
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-# Импортируем через абсолютные пути (как в aibot.py)
+# Добавляем путь к текущей папке, чтобы Python нашёл database и exam_engine
+sys.path.append(os.path.dirname(__file__))
+
+# Теперь импорты будут работать
 import database as db
 import exam_engine as exam
 
