@@ -117,26 +117,24 @@ async def cmd_askrank(message: types.Message, state: FSMContext):
 # --- Команда для просмотра своего ранга ---
 @router.message(Command("myrank"))
 async def cmd_myrank(message: types.Message):
-    print(f"--- Вход в команду /myrank ---")
-    print(f"Чат ID сообщения: {message.chat.id}")
-    print(f"Ожидаемый TARGET_CHAT_ID: {TARGET_CHAT_ID}")
     if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
-        # Можно просто игнорировать или ответить один раз
-        # await message.answer("❌ Эта команда работает только в специальном чате.")
-        return  # игнорируем
+        return
+
     user_id = message.from_user.id
     user_data = db.get_user_rank_and_counts(user_id)
 
     if not user_data:
-        await message.answer("Ты еще не задавал вопросов через /askrank. Начни, чтобы получить ранг!")
+        await message.answer(
+            "🧐 **Ты еще не в системе.**\nЗадай свой первый вопрос через `/askrank`, чтобы начать путь.")
         return
 
     rank = user_data["rank"]
     total = user_data["total"]
     today = user_data["today"]
 
-    # Описание рангов
+    # --- ТВОИ ОБНОВЛЕННЫЕ ОПИСАНИЯ ---
     rank_descriptions = {
+        "Zero": "Неизбежность",
         "Five": "Невежа",
         "Four": "Начало пути",
         "Three": "Пытливый",
@@ -144,6 +142,24 @@ async def cmd_myrank(message: types.Message):
         "One": "Бесконечность"
     }
 
+    # --- ВИЗУАЛЬНЫЙ ПРОГРЕСС-БАР ---
+    # Определяем пороги для следующего ранга
+    if total < 11:
+        next_val, n_rank = 11, "Four"
+    elif total < 61:
+        next_val, n_rank = 61, "Three"
+    elif total < 111:
+        next_val, n_rank = 111, "Two"
+    elif total < 201:
+        next_val, n_rank = 201, "One"
+    else:
+        next_val, n_rank = None, None
+
+    progress_str = ""
+    if next_val:
+        filled = int((total / next_val) * 10)
+        bar = "🟢" * filled + "⚪" * (10 - filled)
+        progress_str = f"\n\n**Прогресс до ранга {n_rank}:**\n`{bar}` {total}/{next_val}"
     next_rank_info = ""
     if rank == "Five":
         next_rank_info = "Следующий ранг (Four): 11 вопросов (нужно сдать экзамен из 2 вопросов)"
@@ -154,14 +170,18 @@ async def cmd_myrank(message: types.Message):
     elif rank == "Two":
         next_rank_info = "Следующий ранг (One): 201 вопрос (экзамен из 10 заданий: 3 вопроса + 7 примеров)"
 
-    text = (
-        f"📊 **Твой профиль:**\n"
-        f"Ранг: **{rank}** ({rank_descriptions.get(rank, rank)})\n"
-        f"Всего вопросов: {total}\n"
-        f"Сегодня: {today}\n\n"
-        f"{next_rank_info}"
-    )
-    await message.answer(text)
+        # --- ФОРМИРУЕМ КРАСИВЫЙ ОТВЕТ ---
+        text = (
+            f"👤 **Профиль пользователя {message.from_user.first_name}**\n"
+            f"───\n"
+            f"🎖 Ранг: **{rank}** ({rank_descriptions.get(rank, 'Странник')})\n"
+            f"📊 Всего вопросов: `{total}`\n"
+            f"📅 За сегодня: `{today}`\n"
+            f"───"
+            f"{progress_str}"
+        )
+
+        await message.answer(text, parse_mode="Markdown")
 
 
 # --- Команда для принудительного начала экзамена (если хочешь) ---
