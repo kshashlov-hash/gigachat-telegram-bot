@@ -8,13 +8,13 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message, BotCommand
+from langchain_core.prompts import load_prompt
 from langchain_gigachat.chat_models import GigaChat
 import http.server
 import socketserver
 from threading import Thread
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 from rank_system.database import ensure_owner_rank
-from rank_system.rank_handler import cmd_askrank, cmd_exam, cmd_myrank, cmd_exam_cancel
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -36,10 +36,7 @@ GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-print("⚙️ Попытка подключения rank_router...")
-dp.include_router(rank_router)
-print(f"✅ Роутер rank_router подключен. Список команд в роутере активен.", rank_router)
-
+# Сначала создаем объект GigaChat
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
     verify_ssl_certs=False,
@@ -48,6 +45,18 @@ giga = GigaChat(
     max_tokens=1000,
     scope="GIGACHAT_API_PERS"
 )
+
+# Теперь загружаем промпт
+SYSTEM_PROMPT = load_prompt("default.txt")
+
+# И ТОЛЬКО ТЕПЕРЬ передаем их в dp
+dp['giga'] = giga
+dp['sys_prompt'] = SYSTEM_PROMPT
+
+# Теперь подключаем роутер (он увидит данные из dp)
+print("⚙️ Попытка подключения rank_router...")
+dp.include_router(rank_router)
+# ...
 
 logging.basicConfig(level=logging.INFO)
 
@@ -246,7 +255,7 @@ async def main():
     await set_commands()
 
     print("🚀 Бот запущен и слушает сообщения...")
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, giga=giga, sys_prompt=SYSTEM_PROMPT)
 
 
 if __name__ == "__main__":

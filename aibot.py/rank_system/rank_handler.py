@@ -1,187 +1,140 @@
+import os
+import sys
+import logging
 from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-import random
-import logging
+
+# --- ХАК ДЛЯ ИМПОРТОВ ---
+# Добавляем корень проекта в пути поиска, чтобы папка utils была видна
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+# ------------------------
+
+# Теперь импорты должны работать без ошибок
 from . import database as db
 from . import exam_engine as exam
 
-import os
-# ID чата, в котором работает ранговая система (задаётся в переменной окружения RANK_CHAT_ID)
-# Если не задано или 0, система будет работать во всех чатах (для отладки)
+# Параметры чата
 TARGET_CHAT_ID = int(os.getenv("RANK_CHAT_ID", "0"))
-
-# Создаем роутер для команд этой системы
 router = Router()
 
-
-# --- FSM для экзаменов (состояния) ---
 class ExamStates(StatesGroup):
     waiting_for_answer = State()
-    exam_data = State()  # храним список вопросов, индекс, целевой ранг
+    exam_data = State()
 
 
-# --- Вспомогательная функция для определения следующего ранга ---
 def get_target_rank(total_questions):
-    if 11 <= total_questions <= 60:
-        return "Four"
-    elif 61 <= total_questions <= 110:
-        return "Three"
-    elif 111 <= total_questions <= 200:
-        return "Two"
-    elif total_questions >= 201:
-        return "One"
+    if 11 <= total_questions <= 60: return "Four"
+    if 61 <= total_questions <= 110: return "Three"
+    if 111 <= total_questions <= 200: return "Two"
+    if total_questions >= 201: return "One"
     return None
 
 
-# --- Команда для задания вопроса в системе рангов ---
-
 @router.message(Command("askrank"))
-async def cmd_askrank(message: types.Message, state: FSMContext):
-    print(f"🔥 /askrank получена в чате {message.chat.id}")
+async def cmd_askrank(message: types.Message, state: FSMContext, giga: any, sys_prompt: dict):
     if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
-        # Можно просто игнорировать или ответить один раз
-        # await message.answer("❌ Эта команда работает только в специальном чате.")
-        return  # игнорируем
+        return
+
+    query = message.text.replace("/askrank", "").replace(f"@{message.bot.username}", "").strip()
+    if not query:
+        await message.answer("❓ **Вы не ввели вопрос!**\nИспользование: `/askrank ваш вопрос`", parse_mode="Markdown")
+        return
+
     user_id = message.from_user.id
-    username = message.from_user.username or "no_username"
-    first_name = message.from_user.first_name or "User"
-
-    # Создаем пользователя, если его нет
-    db.create_user(user_id, username, first_name)
-
-    # Получаем данные о пользователе
+    db.create_user(user_id, message.from_user.username or "user", message.from_user.first_name)
     user_data = db.get_user_rank_and_counts(user_id)
-    if not user_data:
-        await message.answer("❌ Ошибка получения данных.")
+
+    if user_data["today"] >= 20:
+        await message.answer(f"⏳ Лимит 20 вопросов в день исчерпан. (За сегодня: {user_data['today']})")
         return
 
-    total_q = user_data["total"]
-    today_q = user_data["today"]
-    current_rank = user_data["rank"]
-
-    # Проверка суточного лимита (например, 20 вопросов в день)
-    DAILY_LIMIT = 20
-    if today_q >= DAILY_LIMIT:
-        await message.answer(
-            f"⏳ Ты сегодня уже задал {today_q} вопросов. Лимит на сегодня исчерпан. Возвращайся завтра!")
+    if await state.get_state() == ExamStates.waiting_for_answer:
+        await message.answer("⚠️ Сначала заверши экзамен или отмени его: /exam_cancel")
         return
 
-    # Если пользователь в процессе экзамена, не даем задавать вопросы
-    current_state = await state.get_state()
-    if current_state is not None:
-        await message.answer("Сначала заверши экзамен! Используй /exam_cancel, если хочешь прервать.")
-        return
-
-    # Увеличиваем счетчик вопросов и получаем новое общее количество
     new_total = db.increment_question_count(user_id)
-
-    # Определяем, нужно ли начать экзамен для перехода на новый ранг
+    current_rank = user_data["rank"]
     target_rank = get_target_rank(new_total)
 
+    # Проверка на экзамен
     if target_rank and target_rank != current_rank:
-        # Проверяем, не сдавал ли он уже этот экзамен
         exam_status = db.get_exam_status(user_id, target_rank)
-        if exam_status["passed"]:
-            # Уже сдал, просто повышаем ранг (на всякий случай, если база не обновилась)
-            db.update_user_rank(user_id, target_rank)
-            await message.answer(f"🎉 Поздравляю! Ты достиг ранга **{target_rank}** (подтверждено ранее).")
-        else:
-            # Начинаем экзамен
+        if not exam_status["passed"]:
             exam_questions = exam.get_exam_for_rank(target_rank)
             if exam_questions:
                 await state.set_state(ExamStates.waiting_for_answer)
-                await state.update_data(
-                    exam_questions=exam_questions,
-                    exam_index=0,
-                    target_rank=target_rank,
-                    correct_count=0
-                )
-                first_q = exam_questions[0]
+                await state.update_data(exam_questions=exam_questions, exam_index=0, target_rank=target_rank,
+                                        correct_count=0)
                 await message.answer(
-                    f"🌟 **Экзамен на ранг {target_rank}!**\n\n"
-                    f"Вопрос 1 из {len(exam_questions)}:\n"
-                    f"{first_q['question']}\n\n"
-                    f"Ответь одним словом или числом."
-                )
+                    f"🌟 **ЭКЗАМЕН на ранг {target_rank}!**\nПрогресс: {new_total} вопр.\n\nВопрос 1:\n`{exam_questions[0]['question']}`",
+                    parse_mode="Markdown")
                 return
-    else:
-        # Обычный вопрос, просто отвечаем через GigaChat (интеграция с ask_gigachat)
-        # Здесь тебе нужно вызвать твою функцию ask_gigachat
-        # Так как это отдельный модуль, мы просто отправим сообщение, что вопрос принят
-        await message.answer(f"✅ Вопрос принят! (Всего: {new_total}, сегодня: {today_q + 1})")
-        # Тут нужно будет вызвать ask_gigachat из основного файла, это обсуждаемо
+
+    # ОТВЕТ GIGACHAT
+    await message.bot.send_chat_action(message.chat.id, "typing")
+    chat_id = message.chat.id
+
+    # Берем историю из импортированного объекта conversation_history
+    history = conversation_history.get_history(chat_id, user_id)
+    messages = [sys_prompt] + history + [{"role": "user", "content": query}]
+
+    try:
+        response = giga.invoke(messages)
+        answer = response.content
+
+        # Сохраняем в историю
+        conversation_history.add_message(chat_id, user_id, "user", query)
+        conversation_history.add_message(chat_id, user_id, "assistant", answer)
+
+        await message.reply(f"{answer}\n\n💠 _Засчитано в ранг (Всего: {new_total})_", parse_mode="Markdown")
+    except Exception as e:
+        logging.error(f"GigaChat Error: {e}")
+        await message.reply("❌ Ошибка нейросети при ответе.")
 
 
-# --- Команда для просмотра своего ранга ---
 @router.message(Command("myrank"))
 async def cmd_myrank(message: types.Message):
     if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
         return
 
-    user_id = message.from_user.id
-    user_data = db.get_user_rank_and_counts(user_id)
-
+    user_data = db.get_user_rank_and_counts(message.from_user.id)
     if not user_data:
-        await message.answer(
-            "🧐 **Ты еще не в системе.**\nЗадай свой первый вопрос через `/askrank`, чтобы начать путь.")
+        await message.answer("🧐 Ты еще не в системе. Напиши `/askrank [вопрос]`")
         return
 
     rank = user_data["rank"]
     total = user_data["total"]
     today = user_data["today"]
 
-    # --- ТВОИ ОБНОВЛЕННЫЕ ОПИСАНИЯ ---
     rank_descriptions = {
-        "Zero": "Неизбежность",
-        "Five": "Невежа",
-        "Four": "Начало пути",
-        "Three": "Пытливый",
-        "Two": "Искусный",
-        "One": "Бесконечность"
+        "Zero": "Неизбежность", "Five": "Невежа", "Four": "Начало пути",
+        "Three": "Пытливый", "Two": "Искусный", "One": "Бесконечность"
     }
 
-    # --- ВИЗУАЛЬНЫЙ ПРОГРЕСС-БАР ---
-    # Определяем пороги для следующего ранга
-    if total < 11:
-        next_val, n_rank = 11, "Four"
-    elif total < 61:
-        next_val, n_rank = 61, "Three"
-    elif total < 111:
-        next_val, n_rank = 111, "Two"
-    elif total < 201:
-        next_val, n_rank = 201, "One"
-    else:
-        next_val, n_rank = None, None
+    # Пороги для баров
+    thresholds = [(11, "Four"), (61, "Three"), (111, "Two"), (201, "One")]
+    next_val, n_rank = next(((v, r) for v, r in thresholds if total < v), (None, None))
 
     progress_str = ""
     if next_val:
         filled = int((total / next_val) * 10)
         bar = "🟢" * filled + "⚪" * (10 - filled)
         progress_str = f"\n\n**Прогресс до ранга {n_rank}:**\n`{bar}` {total}/{next_val}"
-    next_rank_info = ""
-    if rank == "Five":
-        next_rank_info = "Следующий ранг (Four): 11 вопросов (нужно сдать экзамен из 2 вопросов)"
-    elif rank == "Four":
-        next_rank_info = "Следующий ранг (Three): 61 вопрос (экзамен из 5 вопросов)"
-    elif rank == "Three":
-        next_rank_info = "Следующий ранг (Two): 111 вопросов (экзамен из 9 вопросов)"
-    elif rank == "Two":
-        next_rank_info = "Следующий ранг (One): 201 вопрос (экзамен из 10 заданий: 3 вопроса + 7 примеров)"
 
-        # --- ФОРМИРУЕМ КРАСИВЫЙ ОТВЕТ ---
-        text = (
-            f"👤 **Профиль пользователя {message.from_user.first_name}**\n"
-            f"───\n"
-            f"🎖 Ранг: **{rank}** ({rank_descriptions.get(rank, 'Странник')})\n"
-            f"📊 Всего вопросов: `{total}`\n"
-            f"📅 За сегодня: `{today}`\n"
-            f"───"
-            f"{progress_str}"
-        )
-
-        await message.answer(text, parse_mode="Markdown")
+    text = (
+        f"👤 **Профиль: {message.from_user.first_name}**\n"
+        f"───\n"
+        f"🎖 Ранг: **{rank}** ({rank_descriptions.get(rank, 'Странник')})\n"
+        f"📊 Всего вопросов: `{total}`\n"
+        f"📅 За сегодня: `{today}`\n"
+        f"───{progress_str}"
+    )
+    await message.answer(text, parse_mode="Markdown")
 
 
 # --- Команда для принудительного начала экзамена (если хочешь) ---
