@@ -14,6 +14,7 @@ import socketserver
 from threading import Thread
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 from rank_system.database import ensure_owner_rank
+from rank_system.rank_handler import cmd_askrank, cmd_exam, cmd_myrank, cmd_exam_cancel
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -168,6 +169,7 @@ async def handle_mention(message: Message):
         if query:
             await ask_gigachat(message, query)
         return
+
 
 
 
