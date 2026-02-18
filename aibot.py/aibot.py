@@ -14,7 +14,8 @@ import socketserver
 from threading import Thread
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 from rank_system.database import ensure_owner_rank
-from utils.ask_gigachat import init_gigachat, ask_gigachat
+from utils.gigachat_client import ask_gigachat as _ask_gigachat
+
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -35,7 +36,7 @@ GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
 # ------------------------------------------------------------
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
-
+bot.ask_gigachat = lambda query: _ask_gigachat(bot, query)
 # Сначала создаем объект GigaChat
 giga = GigaChat(
     credentials=GIGACHAT_CRED,

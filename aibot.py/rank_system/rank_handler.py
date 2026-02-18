@@ -1,18 +1,20 @@
 import os
 import sys
+from pathlib import Path
+
+# Добавляем путь к корню проекта
+root_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(root_dir))
+
 import logging
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-# Добавляем путь к текущей папке, чтобы Python нашёл database и exam_engine
-sys.path.append(os.path.dirname(__file__))
-
-# Теперь импорты будут работать
+# Импорты через прямой путь (без указания пакетов)
 import database as db
 import exam_engine as exam
-from ..utils.ask_gigachat import ask_gigachat
 
 # ID чата (из переменных окружения Render)
 TARGET_CHAT_ID = int(os.getenv("RANK_CHAT_ID", "0"))
@@ -109,7 +111,7 @@ async def cmd_askrank(message: types.Message, state: FSMContext):
 
     # Если экзамен не нужен — просто подтверждаем приём вопроса
     await message.answer(f"✅ Вопрос принят! (Всего: {new_total}, сегодня: {today_q + 1})")
-    await ask_gigachat(message, query)
+    await message.bot.ask_gigachat(query)
 
 # -------------------- КОМАНДА /myrank --------------------
 @router.message(Command("myrank"))
