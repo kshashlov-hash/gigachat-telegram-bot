@@ -203,6 +203,7 @@ async def cmd_exam(message: types.Message, state: FSMContext):
         parse_mode="Markdown"
     )
 
+
 @router.message(ExamStates.waiting_for_answer)
 async def handle_exam_answer(message: types.Message, state: FSMContext):
     user_answer = message.text
@@ -212,34 +213,45 @@ async def handle_exam_answer(message: types.Message, state: FSMContext):
     target_rank = data['target_rank']
     correct_count = data['correct_count']
 
+    # Проверяем ответ
     correct = exam.check_answer(user_answer, exam_questions[current_index]['answer'])
+
     if correct:
         correct_count += 1
         await message.answer("✅ Верно!")
     else:
         await message.answer(f"❌ Неверно. Правильный ответ: {exam_questions[current_index]['answer']}")
 
+    # Переходим к следующему вопросу
     current_index += 1
+
     if current_index < len(exam_questions):
-        await state.update_data(exam_index=current_index, correct_count=correct_count)
+        # Следующий вопрос
+        await state.update_data(
+            exam_index=current_index,
+            correct_count=correct_count
+        )
+        next_q = exam_questions[current_index]
         await message.answer(
-            f"Вопрос {current_index + 1} из {len(exam_questions)}:\n{exam_questions[current_index]['question']}"
+            f"Вопрос {current_index + 1} из {len(exam_questions)}:\n"
+            f"{next_q['question']}"
         )
     else:
-        required = len(exam_questions)
-        if correct_count >= required:
+        # Экзамен окончен
+        required_correct = len(exam_questions)
+        if correct_count >= required_correct:
             db.update_user_rank(message.from_user.id, target_rank)
             db.update_exam_attempt(message.from_user.id, target_rank, passed=True)
-            await message.answer(f"🎉 **Поздравляю!** Ты получил ранг **{target_rank}**!")
+            await message.answer(
+                f"🎉 **Поздравляю!** Ты успешно сдал экзамен и получил ранг **{target_rank}**!"
+            )
         else:
             db.update_exam_attempt(message.from_user.id, target_rank, passed=False)
-            await message.answer(f"😞 Экзамен не сдан. Правильных ответов: {correct_count} из {required}.")
+            await message.answer(
+                f"😞 Экзамен не сдан. Правильных ответов: {correct_count} из {len(exam_questions)}.\n"
+                f"Попробуй снова через /exam."
+            )
         await state.clear()
-
-@router.message(Command("exam_cancel"))
-async def cmd_exam_cancel(message: types.Message, state: FSMContext):
-    await state.clear()
-    await message.answer("❌ Экзамен прерван.")
 
 
 @router.message(Command("rank_help"))
@@ -264,7 +276,7 @@ async def cmd_rank_help(message: types.Message):
 🔥 **Three (Пытливый)** — 61–110 вопросов
 ⚡ **Two (Искусный)** — 111–200 вопросов
 ✨ **One (Бесконечность)** — 200+ вопросов
-💀 **Zero (Неизбежность)** — только для создателя
+💀 **Zero (Неизбежность)** — только для milk
 
 **📝 Экзамены:**
 При достижении порога (11, 61, 111, 200) нужно сдать экзамен:
