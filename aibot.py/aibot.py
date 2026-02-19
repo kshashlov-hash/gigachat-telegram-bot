@@ -149,8 +149,11 @@ async def cmd_ask(message: Message):
 @dp.message(~F.text.startswith("/"))
 async def global_message_handler(message: Message):
     if message.chat.type != "private":
-        title = message.chat.title or "Без названия"
-        save_chat(message.chat.id, message.chat.type, title)
+        if message.chat.type != "private":
+            from utils.chats_db import save_chat
+            title = message.chat.title or "Без названия"
+            save_chat(message.chat.id, message.chat.type, title)
+            print(f"💾 Сохранён чат: {message.chat.id} ({title})")
     text = message.text or message.caption or ""
     bot_id = (await bot.me()).id
     bot_username = (await bot.me()).username
