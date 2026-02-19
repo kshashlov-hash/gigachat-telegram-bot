@@ -15,7 +15,7 @@ from threading import Thread
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 from rank_system.database import ensure_owner_rank
 from utils.gigachat_client import init_gigachat, ask_gigachat
-
+from utils.chats_db import save_chat
 # Импорт твоей истории
 from utils.history import conversation_history
 
@@ -148,6 +148,9 @@ async def cmd_ask(message: Message):
 
 @dp.message(~F.text.startswith("/"))
 async def global_message_handler(message: Message):
+    if message.chat.type != "private":
+        title = message.chat.title or "Без названия"
+        save_chat(message.chat.id, message.chat.type, title)
     text = message.text or message.caption or ""
     bot_id = (await bot.me()).id
     bot_username = (await bot.me()).username

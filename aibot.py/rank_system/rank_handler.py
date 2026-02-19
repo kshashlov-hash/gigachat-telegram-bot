@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-
+import asyncio
 # Жёстко добавляем путь к корню проекта
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
@@ -299,3 +299,73 @@ async def cmd_rank_help(message: types.Message):
 Удачи в прокачке! 🚀
 """
     await message.answer(help_text, parse_mode="Markdown")
+
+
+@router.message(Command("broadcast"))
+async def cmd_broadcast(message: types.Message):
+    """Отправляет сообщение во все чаты, где есть бот (только для владельца, только в личке)"""
+
+    # Проверяем, что это личка
+    if message.chat.type != "private":
+        return
+
+    # Проверяем, что это владелец (Zero ранг)
+    user_data = db.get_user_rank_and_counts(message.from_user.id)
+    if not user_data or user_data["rank"] != "Zero":
+        return
+
+    # Получаем текст сообщения
+    text = message.text.replace("/broadcast", "", 1).strip()
+    if not text:
+        await message.answer(
+            "📢 **Команда /broadcast**\n\n"
+            "Отправляет сообщение во все чаты, где есть бот.\n\n"
+            "Использование:\n"
+            "`/broadcast [текст]`\n\n"
+            "Пример: `/broadcast 🚀 Вышло обновление!`",
+            parse_mode="Markdown"
+        )
+        return
+
+    # Отправляем подтверждение о начале рассылки
+    status_msg = await message.answer("🔄 Начинаю рассылку...")
+
+    # Получаем список всех чатов, где есть бот
+    # (в aiogram нет прямого метода, нужно хранить свои чаты или использовать get_updates)
+    # Альтернатива: собираем ID чатов из истории
+
+    # Временно используем заглушку — нужно будет добавить хранилище чатов
+    chats_to_send = []
+
+    # TODO: добавить сбор ID чатов из базы данных
+    # Пока просто отправляем в тот же чат для демонстрации
+    chats_to_send = [message.chat.id]
+
+    if not chats_to_send:
+        await status_msg.edit_text("❌ Нет чатов для рассылки.")
+        return
+
+    successful = 0
+    failed = 0
+
+    for chat_id in chats_to_send:
+        try:
+            await message.bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                parse_mode="Markdown"
+            )
+            successful += 1
+            # Небольшая задержка, чтобы не спамить
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            failed += 1
+            logging.error(f"❌ Ошибка отправки в чат {chat_id}: {e}")
+
+    # Отправляем отчёт
+    await status_msg.edit_text(
+        f"✅ **Рассылка завершена!**\n\n"
+        f"📨 Успешно: {successful}\n"
+        f"❌ Ошибок: {failed}",
+        parse_mode="Markdown"
+    )
