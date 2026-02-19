@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 import asyncio
+
 # Жёстко добавляем путь к корню проекта
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
@@ -13,11 +14,13 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-# Импорты через абсолютные пути
+# ИМПОРТЫ МОДУЛЕЙ (после того как путь точно добавлен)
 try:
+    from utils.chats_db import get_all_chats, save_chat
     from rank_system import database as db
     from rank_system import exam_engine as exam
     from utils.gigachat_client import ask_gigachat
+    print("✅ Все импорты успешны")
 except ImportError as e:
     print(f"❌ Ошибка импорта: {e}")
     print(f"🔍 Текущий sys.path: {sys.path}")
@@ -309,41 +312,35 @@ async def cmd_broadcast(message: types.Message):
     if message.chat.type != "private":
         return
 
-    # Проверяем, что это владелец (Zero ранг)
+    # Проверяем, что это владелец
     user_data = db.get_user_rank_and_counts(message.from_user.id)
     if not user_data or user_data["rank"] != "Zero":
         return
 
-    # Получаем текст сообщения
     text = message.text.replace("/broadcast", "", 1).strip()
     if not text:
         await message.answer(
             "📢 **Команда /broadcast**\n\n"
-            "Отправляет сообщение во все чаты, где есть бот.\n\n"
-            "Использование:\n"
-            "`/broadcast [текст]`\n\n"
-            "Пример: `/broadcast 🚀 Вышло обновление!`",
+            "Использование: `/broadcast [текст]`",
             parse_mode="Markdown"
         )
         return
 
-    # Отправляем подтверждение о начале рассылки
     status_msg = await message.answer("🔄 Начинаю рассылку...")
 
-    # Получаем список всех чатов, где есть бот
-    # (в aiogram нет прямого метода, нужно хранить свои чаты или использовать get_updates)
-    # Альтернатива: собираем ID чатов из истории
+    # Получаем все сохранённые чаты
+    from utils.chats_db import get_all_chats
+    chats = get_all_chats()
 
-    # Временно используем заглушку — нужно будет добавить хранилище чатов
-    chats_to_send = []
-
-    # TODO: добавить сбор ID чатов из базы данных
-    # Пока просто отправляем в тот же чат для демонстрации
-    chats_to_send = [message.chat.id]
+    # Фильтруем: исключаем текущий чат (личку)
+    chats_to_send = [chat[0] for chat in chats if chat[0] != message.chat.id]
 
     if not chats_to_send:
         await status_msg.edit_text("❌ Нет чатов для рассылки.")
         return
+
+    # Отправляем диагностику (можно убрать после отладки)
+    await message.answer(f"📋 Найдено чатов для рассылки: {len(chats_to_send)}")
 
     successful = 0
     failed = 0
@@ -356,16 +353,15 @@ async def cmd_broadcast(message: types.Message):
                 parse_mode="Markdown"
             )
             successful += 1
-            # Небольшая задержка, чтобы не спамить
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.5)  # задержка
         except Exception as e:
             failed += 1
             logging.error(f"❌ Ошибка отправки в чат {chat_id}: {e}")
 
-    # Отправляем отчёт
     await status_msg.edit_text(
         f"✅ **Рассылка завершена!**\n\n"
         f"📨 Успешно: {successful}\n"
-        f"❌ Ошибок: {failed}",
+        f"❌ Ошибок: {failed}\n"
+        f"📊 Всего чатов в базе: {len(chats)}",
         parse_mode="Markdown"
     )
