@@ -14,8 +14,7 @@ import socketserver
 from threading import Thread
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 from rank_system.database import ensure_owner_rank
-from utils.gigachat_client import ask_gigachat
-
+from utils.gigachat_client import init_gigachat, ask_gigachat
 
 # Импорт твоей истории
 from utils.history import conversation_history
@@ -80,11 +79,12 @@ async def set_commands():
         BotCommand(command="start", description="🚀 Запустить бота"),
         BotCommand(command="ask", description="❓ Задать вопрос"),
         BotCommand(command="reset", description="🔄 Сбросить историю"),
-        BotCommand(command="help", description="ℹ️ Помощь"),
-        BotCommand(command="askrank", description="🚀 Запустить бота"),
-        BotCommand(command="myrank", description="❓ Задать вопрос"),
-        BotCommand(command="exam", description="🔄 Сбросить историю"),
-        BotCommand(command="exam_cancel", description="ℹ️ Помощь"),
+        BotCommand(command="help", description="ℹ️ Общая справка"),
+        BotCommand(command="askrank", description="🎓 Вопрос для ранга"),
+        BotCommand(command="myrank", description="📊 Мой ранг"),
+        BotCommand(command="exam", description="📝 Начать экзамен"),
+        BotCommand(command="exam_cancel", description="🚫 Отменить экзамен"),
+        BotCommand(command="rank_help", description="📖 О ранговой системе"),
     ]
     await bot.set_my_commands(commands)
     print("✅ Меню команд установлено!")
@@ -215,7 +215,7 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
 
     await set_commands()
-
+    init_gigachat(giga, SYSTEM_PROMPT)
     print("🚀 Бот запущен и слушает сообщения...")
     await dp.start_polling(bot, giga=giga, sys_prompt=SYSTEM_PROMPT)
 
