@@ -96,7 +96,7 @@ async def set_commands():
 # ------------------------------------------------------------
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    await message.answer("Я бот от создателя milk. Упомяни меня @DeadPIHTOaibot или напиши /ask вопрос")
+    await message.answer("Я бот от milk. Упомяни меня @DeadPIHTOaibot или напиши /ask вопрос. 📚 Вызвать справку - /help")
 
 
 @dp.message(Command("reset"))

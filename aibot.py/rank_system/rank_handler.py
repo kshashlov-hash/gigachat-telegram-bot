@@ -57,7 +57,7 @@ async def cmd_askrank(message: types.Message, state: FSMContext):
 
     query = message.text.replace("/askrank", "", 1).strip()
     if not query:
-        await message.answer("❓ Напиши вопрос после команды /askrank")
+        await message.answer("❓ Напиши вопрос после команды в одном сообщннии /askrank")
         return
 
     user_id = message.from_user.id
@@ -109,12 +109,12 @@ async def cmd_askrank(message: types.Message, state: FSMContext):
     await ask_gigachat(message, query)
     await message.answer(f"✅ Вопрос принят! (Всего: {new_total})")
 
+
 @router.message(Command("myrank"))
 async def cmd_myrank(message: types.Message):
-    print(f"📊 /myrank получена в чате {message.chat.id}")
+    """Показывает профиль пользователя"""
 
     if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
-        print(f"⛔ /myrank проигнорирована в чате {message.chat.id}")
         return
 
     user_data = db.get_user_rank_and_counts(message.from_user.id)
@@ -127,49 +127,30 @@ async def cmd_myrank(message: types.Message):
     today = user_data["today"]
     name = message.from_user.first_name or "Аноним"
 
-    rank_desc = {
-        "Five": "Невежа",
-        "Four": "Начало пути",
-        "Three": "Пытливый",
-        "Two": "Искусный",
-        "One": "Бесконечность",
-        "Zero": "Неизбежность"
+    rank_info = {
+        "Five": ("🪵", "Невежа"),
+        "Four": ("🌱", "Начало пути"),
+        "Three": ("🔥", "Пытливый"),
+        "Two": ("⚡", "Искусный"),
+        "One": ("✨", "Бесконечность"),
+        "Zero": ("💀", "Неизбежность")
     }
 
-    rank_emoji = {
-        "Five": "🪵",
-        "Four": "🌱",
-        "Three": "🔥",
-        "Two": "⚡",
-        "One": "✨",
-        "Zero": "💀"
-    }
+    emoji, rank_name = rank_info.get(rank, ("🎖", rank))
 
-    emoji = rank_emoji.get(rank, "🎖")
-    desc = rank_desc.get(rank, rank)
-
+    # Пороги для следующего ранга
     thresholds = [(11, "Four", "🌱"), (61, "Three", "🔥"), (111, "Two", "⚡"), (201, "One", "✨")]
     next_data = next(((v, r, e) for v, r, e in thresholds if total < v), (None, None, None))
 
-    progress_text = ""
+    profile = f"👤 **{name}**\n{emoji} ◾️ {rank}  · ◾️ {rank_name}\n\n📊 `{total}` вопросов · `{today}` сегодня"
+
     if next_data[0]:
         next_val, next_rank, next_emoji = next_data
-        filled = int((total / next_val) * 10)
-        bar = "█" * filled + "░" * (10 - filled)
-        progress_text = f"\n📈 До ранга {next_emoji} **{next_rank}**:\n   └─ {bar} `{total}/{next_val}`"
+        percent = int((total / next_val) * 10)
+        bar = "●" * percent + "○" * (10 - percent)
+        profile += f"\n\n📈 До {next_emoji} ◾️ {next_rank} \n{bar} `{total}/{next_val}`"
 
-    text = (
-        f"╭────────────────────────╮\n"
-        f"│        🎖 **ПРОФИЛЬ**  │\n"
-        f"╰────────────────────────╯\n\n"
-        f"👤 **{name}**\n"
-        f"{emoji} **Ранг:** {rank} ({desc})\n"
-        f"📊 **Статистика:**\n"
-        f"   └─ Всего вопросов: `{total}`\n"
-        f"   └─ Сегодня: `{today}`"
-        f"{progress_text}"
-    )
-    await message.answer(text, parse_mode="Markdown")
+    await message.answer(profile)
 
 @router.message(Command("exam"))
 async def cmd_exam(message: types.Message, state: FSMContext):
