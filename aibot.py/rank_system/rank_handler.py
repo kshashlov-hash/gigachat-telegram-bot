@@ -133,7 +133,7 @@ async def cmd_myrank(message: types.Message):
         "Three": ("🔥", "Пытливый"),
         "Two": ("⚡", "Искусный"),
         "One": ("✨", "Бесконечность"),
-        "Zero": ("💀", "Неизбежность")
+        "Zero": ("🗽", "Неизбежность")
     }
 
     emoji, rank_name = rank_info.get(rank, ("🎖", rank))
@@ -144,7 +144,7 @@ async def cmd_myrank(message: types.Message):
 
     profile = f"╭─────── 🎯 **ПРОФИЛЬ** ───────╮\n\n"
     profile += f"👤{name}\n"
-    profile += f"{emoji} {rank} · {rank_name}\n\n"
+    profile += f"Ранг: {emoji} {rank} · {rank_name}\n\n"
     profile += f" `{total}` вопросов  ·  `{today}` сегодня\n"
 
     if next_data[0]:
