@@ -14,7 +14,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-# ИМПОРТЫ МОДУЛЕЙ (после того как путь точно добавлен)
+# ИМПОРТЫ МОДУЛЕЙ
 try:
     from utils.chats_db import get_all_chats, save_chat
     from rank_system import database as db
@@ -142,34 +142,39 @@ async def cmd_myrank(message: types.Message):
     thresholds = [(11, "Four", "🌱"), (61, "Three", "🔥"), (111, "Two", "⚡"), (201, "One", "✨")]
     next_data = next(((v, r, e) for v, r, e in thresholds if total < v), (None, None, None))
 
-    profile = f"👤 **{name}**\n{emoji} ◾️ {rank}  · ◾️ {rank_name}\n\n📊 `{total}` вопросов · `{today}` сегодня"
+    profile = f"╭─────── 🎯 **ПРОФИЛЬ** ───────╮\n\n"
+    profile += f"👤{name}\n"
+    profile += f"{emoji} {rank} · {rank_name}\n\n"
+    profile += f" `{total}` вопросов  ·  `{today}` сегодня\n"
 
     if next_data[0]:
         next_val, next_rank, next_emoji = next_data
         percent = int((total / next_val) * 10)
-        bar = "●" * percent + "○" * (10 - percent)
-        profile += f"\n\n📈 До {next_emoji} ◾️ {next_rank} \n{bar} `{total}/{next_val}`"
+        bar = "█" * percent + "░" * (10 - percent)
+        profile += f"\n 🚡 Прогресс до {next_emoji} **{next_rank}**\n{bar} `{total}/{next_val}`\n"
 
-    await message.answer(profile)
+    profile += f"\n╰──────────────────────────╯"
+
+    await message.answer(profile, parse_mode="Markdown")
 
 @router.message(Command("exam"))
 async def cmd_exam(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     user_data = db.get_user_rank_and_counts(user_id)
     if not user_data:
-        await message.answer("Сначала задай вопрос через /askrank.")
+        await message.answer("❕ Сначала задай вопрос через /askrank.")
         return
 
     total_q = user_data["total"]
     target_rank = get_target_rank(total_q)
 
     if not target_rank or target_rank == user_data["rank"]:
-        await message.answer("Сейчас нет доступных экзаменов для повышения.")
+        await message.answer("❕ Сейчас нет доступных экзаменов для повышения.")
         return
 
     exam_status = db.get_exam_status(user_id, target_rank)
     if exam_status["passed"]:
-        await message.answer("Ты уже сдал этот экзамен.")
+        await message.answer("❕ Ты уже сдал этот экзамен.")
         return
 
     exam_questions = exam.get_exam_for_rank(target_rank)
@@ -310,7 +315,6 @@ async def cmd_broadcast(message: types.Message):
     status_msg = await message.answer("🔄 Начинаю рассылку...")
 
     # Получаем все сохранённые чаты
-    from utils.chats_db import get_all_chats
     chats = get_all_chats()
 
     # Фильтруем: исключаем текущий чат (личку)
