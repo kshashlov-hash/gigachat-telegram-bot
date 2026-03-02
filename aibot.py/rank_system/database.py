@@ -157,5 +157,5 @@ def ensure_owner_rank():
     conn.commit()
     conn.close()
 
-# Инициализация
+# TODO: Инициализация
 init_db()

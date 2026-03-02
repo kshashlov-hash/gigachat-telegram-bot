@@ -18,9 +18,10 @@ from utils.gigachat_client import init_gigachat, ask_gigachat
 from utils.chats_db import save_chat
 # Импорт твоей истории
 from utils.history import conversation_history
+from modules.weather import router as weather_router
+
 
 from rank_system.rank_handler import router as rank_router
-
 
 # ------------------------------------------------------------
 # ЗАГРУЗКА ПЕРЕМЕННЫХ
@@ -35,6 +36,8 @@ GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
 # ------------------------------------------------------------
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
+#TODO Подкл погоды:
+dp.include_router(weather_router)
 # Сначала создаем объект GigaChat
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
@@ -212,7 +215,7 @@ def run_health_server():
 # ЗАПУСК (ТОЛЬКО POLLING, РАБОТАЕТ ЛОКАЛЬНО)
 # ------------------------------------------------------------
 async def main():
-    # Запускаем HTTP-сервер для Render и UptimeRobot
+    # TODO:Запускаем HTTP-сервер для Render и UptimeRobot
     Thread(target=run_health_server, daemon=True).start()
 
     await asyncio.sleep(2)
