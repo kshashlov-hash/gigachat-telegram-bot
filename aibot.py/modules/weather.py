@@ -142,7 +142,7 @@ async def cmd_weather(message: types.Message):
     temp_emoji = get_temp_emoji(weather_data['temp'])
 
     weather_text = (
-        f"╭─────── {emoji} **ПОГОДА** {emoji} ───────╮\n\n"
+        f"╭─── {emoji} **ПОГОДА** {emoji} ───╮\n\n"
         f"📍 **{weather_data['city']}, {weather_data['country']}**\n\n"
         f"{temp_emoji} Температура: **{weather_data['temp']}°C**\n"
         f"🤔 Ощущается как: **{weather_data['feels_like']}°C**\n"
@@ -150,7 +150,7 @@ async def cmd_weather(message: types.Message):
         f"💧 Влажность: **{weather_data['humidity']}%**\n"
         f"💨 Ветер: **{weather_data['wind_speed']} м/с**\n"
         f"📊 Давление: **{weather_data['pressure']} мм рт. ст.**\n\n"
-        f"╰────────────────────────────╯"
+        f"╰──────────────────────╯"
     )
 
     await status_msg.edit_text(weather_text, parse_mode="Markdown")
@@ -159,8 +159,17 @@ async def cmd_weather(message: types.Message):
 # Поддержка !погода (обрабатывается отдельно)
 @router.message()
 async def handle_weather_exclamation(message: types.Message):
-    """Обрабатывает !погода как альтернативу /weather"""
-    if message.text and message.text.startswith('!погода'):
+    """Обрабатывает !погода, все остальные !команды пропускает дальше"""
+
+    if not message.text or not message.text.startswith('!'):
+        return  # Не наше дело — пропускаем
+
+    if message.text.startswith('!погода'):
         # Это наша команда — обрабатываем
         await cmd_weather(message)
-        return  # Важно: заканчиваем обработк
+        return
+
+    # Если это !команда, но не !погода — просто пропускаем дальше
+    # (ничего не делаем, не вызываем return)
+    # Благодаря этому сообщение пойдёт к другим хендлерам
+    pass
