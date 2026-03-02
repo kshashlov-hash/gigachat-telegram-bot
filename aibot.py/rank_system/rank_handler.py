@@ -114,7 +114,7 @@ async def cmd_askrank(message: types.Message, state: FSMContext):
 async def cmd_myrank(message: types.Message):
     """Показывает профиль пользователя"""
 
-    if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
+    if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID and message.chat.type != "private":
         return
 
     user_data = db.get_user_rank_and_counts(message.from_user.id)

@@ -1,31 +1,21 @@
 import os
 import aiohttp
 import logging
-from datetime import datetime
 from aiogram import Router, types
 from aiogram.filters import Command
+from pathlib import Path
+from dotenv import load_dotenv
 
-print(f"🔍 ТЕСТ: WEATHER_API_KEY = {os.getenv('WEATHER_API_KEY')}")
-print(f"🔍 Длина: {len(os.getenv('WEATHER_API_KEY')) if os.getenv('WEATHER_API_KEY') else 0}")
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
-# Создаём роутер для команд погоды
 router = Router()
-
-# API ключ из переменных окружения
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 WEATHER_API_URL = "http://api.openweathermap.org/data/2.5/weather"
 
-# ID чата для ограничения (если нужно)
-TARGET_CHAT_ID = int(os.getenv("RANK_CHAT_ID", "0"))
-
-
 async def get_weather(city: str):
-    """
-    Получает погоду для указанного города через OpenWeatherMap API
-    Возвращает словарь с данными или None при ошибке
-    """
     if not WEATHER_API_KEY:
-        logging.error("❌ WEATHER_API_KEY не задан в переменных окружения")
+        logging.error("❌ WEATHER_API_KEY не задан")
         return None
 
     params = {
@@ -40,8 +30,7 @@ async def get_weather(city: str):
             async with session.get(WEATHER_API_URL, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-
-                    weather_data = {
+                    return {
                         'city': data['name'],
                         'country': data['sys']['country'],
                         'temp': round(data['main']['temp']),
@@ -49,22 +38,18 @@ async def get_weather(city: str):
                         'description': data['weather'][0]['description'].capitalize(),
                         'humidity': data['main']['humidity'],
                         'wind_speed': round(data['wind']['speed'], 1),
-                        'pressure': round(data['main']['pressure'] * 0.75006),  # в мм рт. ст.
+                        'pressure': round(data['main']['pressure'] * 0.75006),
                         'icon': data['weather'][0]['icon']
                     }
-                    return weather_data
                 elif response.status == 404:
                     return {"error": "not_found"}
                 else:
-                    logging.error(f"Ошибка API погоды: {response.status}")
                     return {"error": "api_error"}
     except Exception as e:
-        logging.error(f"Ошибка при запросе погоды: {e}")
+        logging.error(f"Ошибка: {e}")
         return {"error": "connection_error"}
 
-
 def get_weather_emoji(icon_code: str) -> str:
-    """Конвертирует код иконки OpenWeather в эмодзи"""
     icon_map = {
         '01d': '☀️', '01n': '🌙',
         '02d': '⛅', '02n': '☁️',
@@ -78,66 +63,47 @@ def get_weather_emoji(icon_code: str) -> str:
     }
     return icon_map.get(icon_code, '🌡️')
 
-
 def get_temp_emoji(temp: int) -> str:
-    """Возвращает эмодзи в зависимости от температуры"""
-    if temp < -10:
-        return "🥶"
-    elif temp < 0:
-        return "❄️"
-    elif temp < 10:
-        return "🌡️"
-    elif temp < 20:
-        return "😊"
-    elif temp < 30:
-        return "🌞"
-    else:
-        return "🔥"
+    if temp < -10: return "🥶"
+    elif temp < 0: return "❄️"
+    elif temp < 10: return "🌡️"
+    elif temp < 20: return "😊"
+    elif temp < 30: return "🌞"
+    else: return "🔥"
 
 
-# Команда /weather
 @router.message(Command("weather"))
 async def cmd_weather(message: types.Message):
-    """Показывает погоду: /weather Москва или !погода Москва"""
-
-    if TARGET_CHAT_ID and message.chat.id != TARGET_CHAT_ID:
-        return
-
-    # Проверяем, не вызвана ли команда через !
-    text = message.text
-    if text.startswith('!'):
-        # Преобразуем !погода в /weather
-        text = text.replace('!погода', '/weather', 1)
-
-    parts = text.split(maxsplit=1)
+    parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
         await message.answer(
             "🌍 **Погода**\n\n"
-            "Использование:\n"
-            "• `/weather Москва`\n"
-            "• `!погода Новосибирск`\n\n"
-            "Можно писать на русском или английском.",
+            "Использование: `/weather Москва`",
             parse_mode="Markdown"
         )
         return
 
     city = parts[1].strip()
-
     status_msg = await message.answer(f"🔍 Ищу погоду в *{city}*...", parse_mode="Markdown")
 
+    # Получаем данные
     weather_data = await get_weather(city)
 
+    # ОТЛАДКА: выводим в логи
+    print(f"🌤️ Данные для {city}: {weather_data}")
+
     if not weather_data:
-        await status_msg.edit_text("❌ Не удалось получить данные о погоде. Попробуй позже.")
+        await status_msg.edit_text("❌ Не удалось получить данные о погоде.")
         return
 
-    if isinstance(weather_data, dict) and weather_data.get("error") == "not_found":
-        await status_msg.edit_text(f"❌ Город *{city}* не найден. Проверь название.", parse_mode="Markdown")
-        return
-    elif isinstance(weather_data, dict) and weather_data.get("error"):
-        await status_msg.edit_text("❌ Ошибка при запросе погоды. Попробуй позже.")
+    if isinstance(weather_data, dict) and "error" in weather_data:
+        if weather_data["error"] == "not_found":
+            await status_msg.edit_text(f"❌ Город *{city}* не найден.", parse_mode="Markdown")
+        else:
+            await status_msg.edit_text("❌ Ошибка при запросе погоды.")
         return
 
+    # Если данные есть — показываем
     emoji = get_weather_emoji(weather_data['icon'])
     temp_emoji = get_temp_emoji(weather_data['temp'])
 
@@ -145,8 +111,8 @@ async def cmd_weather(message: types.Message):
         f"╭─── {emoji} **ПОГОДА** {emoji} ───╮\n\n"
         f"📍 **{weather_data['city']}, {weather_data['country']}**\n\n"
         f"{temp_emoji} Температура: **{weather_data['temp']}°C**\n"
-        f"🤔 Ощущается как: **{weather_data['feels_like']}°C**\n"
-        f"📝 Описание: *{weather_data['description']}*\n\n"
+        f"🤔 Ощущается: **{weather_data['feels_like']}°C**\n"
+        f"📝 {weather_data['description']}\n\n"
         f"💧 Влажность: **{weather_data['humidity']}%**\n"
         f"💨 Ветер: **{weather_data['wind_speed']} м/с**\n"
         f"📊 Давление: **{weather_data['pressure']} мм рт. ст.**\n\n"
@@ -154,22 +120,3 @@ async def cmd_weather(message: types.Message):
     )
 
     await status_msg.edit_text(weather_text, parse_mode="Markdown")
-
-
-# Поддержка !погода (обрабатывается отдельно)
-@router.message()
-async def handle_weather_exclamation(message: types.Message):
-    """Обрабатывает !погода, все остальные !команды пропускает дальше"""
-
-    if not message.text or not message.text.startswith('!'):
-        return  # Не наше дело — пропускаем
-
-    if message.text.startswith('!погода'):
-        # Это наша команда — обрабатываем
-        await cmd_weather(message)
-        return
-
-    # Если это !команда, но не !погода — просто пропускаем дальше
-    # (ничего не делаем, не вызываем return)
-    # Благодаря этому сообщение пойдёт к другим хендлерам
-    pass
