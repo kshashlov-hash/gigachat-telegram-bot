@@ -5,6 +5,9 @@ from datetime import datetime
 from aiogram import Router, types
 from aiogram.filters import Command
 
+print(f"🔍 ТЕСТ: WEATHER_API_KEY = {os.getenv('WEATHER_API_KEY')}")
+print(f"🔍 Длина: {len(os.getenv('WEATHER_API_KEY')) if os.getenv('WEATHER_API_KEY') else 0}")
+
 # Создаём роутер для команд погоды
 router = Router()
 
