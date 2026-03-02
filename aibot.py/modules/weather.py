@@ -161,5 +161,6 @@ async def cmd_weather(message: types.Message):
 async def handle_weather_exclamation(message: types.Message):
     """Обрабатывает !погода как альтернативу /weather"""
     if message.text and message.text.startswith('!погода'):
-        # Просто вызываем команду weather с тем же сообщением
+        # Это наша команда — обрабатываем
         await cmd_weather(message)
+        return  # Важно: заканчиваем обработк

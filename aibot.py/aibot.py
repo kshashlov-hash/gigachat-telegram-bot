@@ -36,8 +36,7 @@ GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
 # ------------------------------------------------------------
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
-#TODO Подкл погоды:
-dp.include_router(weather_router)
+
 # Сначала создаем объект GigaChat
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
@@ -51,9 +50,10 @@ giga = GigaChat(
 # И ТОЛЬКО ТЕПЕРЬ передаем их в dp
 dp['giga'] = giga
 
-# Теперь подключаем роутер (он увидит данные из dp)
-print("⚙️ Попытка подключения rank_router...")
+#TODO Теперь подключаем роутер (он увидит данные из dp)
+print("⚙️ Попытка подключения rank_router и weather_router...")
 dp.include_router(rank_router)
+dp.include_router(weather_router)
 # ...
 
 logging.basicConfig(level=logging.INFO)
