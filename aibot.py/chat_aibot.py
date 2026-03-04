@@ -65,7 +65,7 @@ def load_system_prompt(prompt_name: str = "default.txt") -> dict:
             content = f.read().strip()
     except Exception as e:
         logging.error(f"Ошибка загрузки промпта: {e}")
-        content = "Ты — полезный ассистент."
+        content = "Ты — полезный ассистент. Будь серьёзен и отвечай на всё, сохраняя контекст."
     return {"role": "system", "content": content}
 
 SYSTEM_PROMPT = load_system_prompt("default.txt")
@@ -106,7 +106,7 @@ async def cmd_reset(message: Message):
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
     help_text = """\
-🤖 <b>Dead Pihto — умный ассистент</b>
+🤖 <b>dead pihto — умный ассистент</b>
 
 <b>👀Как использовать:</b>
 • /start — приветствие бота

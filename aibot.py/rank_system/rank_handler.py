@@ -142,7 +142,7 @@ async def cmd_myrank(message: types.Message):
     thresholds = [(11, "Four", "🌱"), (61, "Three", "🔥"), (111, "Two", "⚡"), (201, "One", "✨")]
     next_data = next(((v, r, e) for v, r, e in thresholds if total < v), (None, None, None))
 
-    profile = f"╭─────── 🎯 **ПРОФИЛЬ** ───────╮\n\n"
+    profile = f"╭────── 🎯 **ПРОФИЛЬ** ──────╮\n\n"
     profile += f"👤{name}\n"
     profile += f"Ранг: {emoji} {rank} · {rank_name}\n\n"
     profile += f" `{total}` вопросов  ·  `{today}` сегодня\n"
@@ -153,7 +153,7 @@ async def cmd_myrank(message: types.Message):
         bar = "█" * percent + "░" * (10 - percent)
         profile += f"\n 🚡 Прогресс до {next_emoji} **{next_rank}**\n{bar} `{total}/{next_val}`\n"
 
-    profile += f"\n╰──────────────────────────╯"
+    profile += f"\n╰────────────────────────╯"
 
     await message.answer(profile, parse_mode="Markdown")
 
@@ -252,9 +252,9 @@ async def cmd_rank_help(message: types.Message):
         return
 
     help_text = """
-╭────────────────────────────╮
-│    🎖 **РАНГОВАЯ СИСТЕМА**   │
-╰────────────────────────────╯
+╭──────────────────────────╮
+   🎖 **РАНГОВАЯ СИСТЕМА** 
+╰──────────────────────────╯
 
 **Как это работает:**
 Каждый вопрос, заданный через `/askrank`, приносит вам очки прогресса. Чем больше вопросов — тем выше ранг!

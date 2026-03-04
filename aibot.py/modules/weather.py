@@ -116,7 +116,7 @@ async def cmd_weather(message: types.Message):
         f"💧 Влажность: **{weather_data['humidity']}%**\n"
         f"💨 Ветер: **{weather_data['wind_speed']} м/с**\n"
         f"📊 Давление: **{weather_data['pressure']} мм рт. ст.**\n\n"
-        f"╰──────────────────────╯"
+        f"╰──────────────────╯"
     )
 
     await status_msg.edit_text(weather_text, parse_mode="Markdown")
