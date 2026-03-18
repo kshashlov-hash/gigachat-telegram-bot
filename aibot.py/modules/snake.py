@@ -1,8 +1,14 @@
 import uuid
-from aiogram import Router, types, F
-from aiogram.filters import Command
-from aiogram.types import InlineQueryResultArticle, InputTextMessageContent, WebAppInfo
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram import Router, types, F  # Добавили F
+from aiogram.filters import Command  # Добавили Command
+from aiogram.types import (
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    WebAppInfo,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
+)
+from aiogram.utils.keyboard import InlineKeyboardBuilder # Добавили InlineKeyboardBuilder
 
 router = Router()
 
@@ -13,7 +19,8 @@ GAME_URL = "https://kshashlov-hash.github.io/snake-game-for-gtb/"
 @router.message(Command("snake"))
 async def cmd_snake(message: types.Message):
     builder = InlineKeyboardBuilder()
-    builder.row(types.InlineKeyboardButton(
+    # Используем InlineKeyboardButton напрямую из types для консистентности
+    builder.row(InlineKeyboardButton(
         text="🐍 Запустить Змейку",
         web_app=WebAppInfo(url=GAME_URL)
     ))
@@ -26,25 +33,29 @@ async def cmd_snake(message: types.Message):
 # 2. Инлайн-режим (вызов через @DeadPIHTOaibot в любом чате)
 @router.inline_query()
 async def inline_snake(query: types.InlineQuery):
-    results = [
-        InlineQueryResultArticle(
-            id=str(uuid.uuid4()),
-            title="🐍 Поиграть в Змейку",
-            description="Отправить приглашение в игру в этот чат",
-            thumbnail_url="https://img.icons8.com/color/48/snake.png",
-            input_message_content=InputTextMessageContent(
-                message_text="🕹 **Я вызываю всех на дуэль в Змейку!**\nКто сможет побить мой рекорд?"
-            ),
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
-                [types.InlineKeyboardButton(text="🎮 Играть", web_app=WebAppInfo(url=GAME_URL))]
-            ])
-        )
-    ]
-    await query.answer(results, cache_time=1)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎮 Играть в Змейку", web_app=WebAppInfo(url=GAME_URL))]
+    ])
+
+    result = InlineQueryResultArticle(
+        id=str(uuid.uuid4()),
+        title="🐍 Змейка: Вызвать на дуэль",
+        description="Нажми, чтобы отправить игру в чат",
+        thumbnail_url="https://img.icons8.com/color/48/snake.png",
+        input_message_content=InputTextMessageContent(
+            message_text="🕹 **Я вызываю тебя на дуэль в Змейку!**\nСможешь набрать больше очков?"
+        ),
+        reply_markup=keyboard
+    )
+
+    try:
+        # Важно: используем именованный аргумент results=[result]
+        await query.answer(results=[result], cache_time=1)
+    except Exception as e:
+        print(f"Ошибка инлайна: {e}")
 
 # 3. Обработка данных из Mini App (когда игра шлет счет)
 @router.message(F.web_app_data)
 async def handle_game_data(message: types.Message):
-    # Эта функция сработает, когда JS в игре вызовет tg.sendData(score)
     data = message.web_app_data.data
     await message.answer(f"🏁 Игра окончена! Твой результат: **{data}** очков. \nНеплохо для начала! 🐍")
