@@ -28,6 +28,8 @@ from utils.history import conversation_history
 # Импортируем роутеры
 from modules.weather import router as weather_router
 from rank_system.rank_handler import router as rank_router
+from modules.snake import router as snake_router
+
 from aiogram import types, F
 from aiogram.filters import Command
 from aiogram.types import WebAppInfo
@@ -48,6 +50,7 @@ dp = Dispatcher()
 
 dp.include_router(rank_router)
 dp.include_router(weather_router)
+dp.include_router(snake_router)
 
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
@@ -182,19 +185,6 @@ async def global_message_handler(message: Message):
         if query:
             await ask_gigachat(message, query)
         return
-
-@dp.message(Command("snake"))
-async def cmd_snake(message: types.Message):
-    builder = InlineKeyboardBuilder()
-    builder.row(types.InlineKeyboardButton(
-        text="🐍 Запустить Змейку",
-        web_app=WebAppInfo(url=GAME_URL)
-    ))
-
-    await message.answer(
-        "Нажми на кнопку ниже, чтобы начать игру прямо в Telegram!",
-        reply_markup=builder.as_markup()
-    )
 
 # ------------------------------------------------------------
 # ЗАПУСК
