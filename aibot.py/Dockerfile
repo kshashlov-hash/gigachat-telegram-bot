@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Переходим в папку, где лежит основной скрипт
-WORKDIR /app/aibot.py
+WORKDIR /app
 
-# Запускаем бота
-CMD ["python", "chat_aibot.py"]
+# Запускаем, указывая путь к файлу относительно /app
+CMD ["python", "/app/aibot.py/chat_aibot.py"]
