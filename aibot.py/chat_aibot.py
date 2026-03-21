@@ -32,6 +32,7 @@ from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
 from utils.gigachat_client import init_gigachat, ask_gigachat
 from utils.chats_db import save_chat
 from utils.history import conversation_history
+from utils.chats_db import get_all_chats
 
 # Импорт БД (теперь без лишних функций рангов)
 from db_game.database import init_db
@@ -45,6 +46,7 @@ from modules.snake import router as snake_router
 
 TELEGRAM_TOKEN = os.getenv("TOKEN")
 GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
+ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
 
 # ------------------------------------------------------------
 # ИНИЦИАЛИЗАЦИЯ
@@ -154,6 +156,38 @@ async def cmd_ask(message: Message):
         await message.answer("Напиши свой вопрос после команды /ask")
         return
     await ask_gigachat(message, query)
+
+
+@dp.message(Command("broadcast"))
+async def cmd_broadcast(message: Message):
+    # Проверка: только ты можешь использовать эту команду
+    if message.from_user.id != ADMIN_ID:
+        return  # Бот просто игнорирует команду от чужих
+
+    # Извлекаем текст сообщения (всё, что после /broadcast)
+    broadcast_text = message.text.replace("/broadcast", "", 1).strip()
+
+    if not broadcast_text:
+        await message.answer("⚠️ Напиши текст рассылки после команды. \nПример: `/broadcast Всем привет!`")
+        return
+
+    # Получаем список всех чатов из твоей БД
+    # Предполагаем, что get_all_chats() возвращает список chat_id
+    chats = get_all_chats()
+
+    count = 0
+    await message.answer(f"🚀 Начинаю рассылку на {len(chats)} чатов...")
+
+    for chat_id in chats:
+        try:
+            await bot.send_message(chat_id, broadcast_text, parse_mode="HTML")
+            count += 1
+            # Небольшая пауза, чтобы Telegram не забанил за спам
+            await asyncio.sleep(0.05)
+        except Exception as e:
+            logging.error(f"Ошибка отправки в чат {chat_id}: {e}")
+
+    await message.answer(f"✅ Рассылка завершена! Доставлено в {count} чатов.")
 
 # ------------------------------------------------------------
 # ОБРАБОТКА УПОМИНАНИЙ И ОТВЕТОВ
