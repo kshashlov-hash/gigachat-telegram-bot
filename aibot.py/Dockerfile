@@ -7,14 +7,19 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Копируем ВЕСЬ проект (вместе с папкой aibot.py и всем содержимым)
+# 1. Копируем ВЕСЬ проект
 COPY . .
 
-# Теперь переходим в папку, где лежит файл зависимостей и сам бот
+# 2. Маленькая хитрость: выведем список файлов, чтобы в логах Render
+# мы увидели, где лежит requirements.txt
+RUN ls -R
+
+# 3. Устанавливаем зависимости.
+# Мы укажем путь ОТ КОРНЯ /app, чтобы Pip его точно нашел.
+RUN pip install --no-cache-dir -r aibot.py/requirements.txt
+
+# 4. Переходим в папку с ботом
 WORKDIR /app/aibot.py
 
-# Устанавливаем библиотеки (теперь путь "." указывает прямо на aibot.py внутри контейнера)
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Запускаем бота
+# 5. Запускаем бота
 CMD ["python", "chat_aibot.py"]
