@@ -166,7 +166,7 @@ async def cmd_reset(message: Message):
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
     help_text = (
-        "<b>dead pihto</b> ⎯ умный ассистент от <b>milk</b> ⚡️\n\n"
+        "<b>dead pihto</b> ⎯ умный ассистент ⚡️\n\n"
         "<b>🤖 внутри меня НЕЙРОСЕТЬ</b>\n"
         "• <code>/ask</code> [текст] — задать вопрос\n"
         "• <b>Reply</b> ↳ на моё сообщение — я отвечу\n"
@@ -181,7 +181,7 @@ async def cmd_help(message: Message):
         "• <code>/help</code> — эта справка\n\n"
 
         "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        "Создатель: @thesunissad 💥"
+        "Создатель: <b>milk</b> @thesunissad 💥"
     )
     await message.answer(help_text, parse_mode="HTML")
 
