@@ -1,46 +1,50 @@
 import os
 import asyncio
 import logging
-from pathlib import Path
-from dotenv import load_dotenv
-
-# ------------------------------------------------------------
-# ЗАГРУЗКА ПЕРЕМЕННЫХ (САМОЕ НАЧАЛО!)
-# ------------------------------------------------------------
-load_dotenv()
-
-# ТЕПЕРЬ импортируем всё остальное
-from collections import defaultdict
-from datetime import datetime
-from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command
-from aiogram.types import Message, BotCommand
-from langchain_gigachat.chat_models import GigaChat
 import http.server
 import socketserver
 from threading import Thread
+from pathlib import Path
+from dotenv import load_dotenv
+# Определяем путь к папке, где лежит этот скрипт (aibot.py)
+BASE_DIR = Path(__file__).resolve().parent
+
+# Теперь ищем .env прямо рядом с chat_aibot.py
+dotenv_path = BASE_DIR / ".env"
+
+if dotenv_path.exists():
+    load_dotenv(dotenv_path=dotenv_path)
+    print(f"✅ Файл .env найден: {dotenv_path}")
+else:
+    print(f"❌ Файл .env ВСЕ ЕЩЕ НЕ НАЙДЕН по пути: {dotenv_path}")
+
+# Aiogram
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.filters import Command
+from aiogram.types import Message, BotCommand, WebAppInfo
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+# GigaChat & LangChain
+from langchain_gigachat.chat_models import GigaChat
+
+# модули
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
-from rank_system.database import ensure_owner_rank
 from utils.gigachat_client import init_gigachat, ask_gigachat
 from utils.chats_db import save_chat
 from utils.history import conversation_history
 
-# Импортируем роутеры
-from modules.weather import router as weather_router
-from rank_system.rank_handler import router as rank_router
-from modules.snake import router as snake_router
+# Импорт БД (теперь без лишних функций рангов)
+from db_game.database import init_db
 
-from aiogram import types, F
-from aiogram.filters import Command
-from aiogram.types import WebAppInfo
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+# Роутеры
+from modules.weather import router as weather_router
+from modules.snake import router as snake_router
 # ------------------------------------------------------------
 # ЗАГРУЗКА ПЕРЕМЕННЫХ
 # ------------------------------------------------------------
 
 TELEGRAM_TOKEN = os.getenv("TOKEN")
 GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
-GAME_URL = "https://kshashlov-hash.github.io/snake-game-for-gtb/"
 
 # ------------------------------------------------------------
 # ИНИЦИАЛИЗАЦИЯ
@@ -48,9 +52,8 @@ GAME_URL = "https://kshashlov-hash.github.io/snake-game-for-gtb/"
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-dp.include_router(rank_router)
-dp.include_router(weather_router)
 dp.include_router(snake_router)
+dp.include_router(weather_router)
 
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
@@ -85,24 +88,34 @@ async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
         BotCommand(command="ask", description="❓ Задать вопрос"),
-        BotCommand(command="reset", description="🔄 Сбросить историю"),
-        BotCommand(command="help", description="ℹ️ Общая справка"),
-        BotCommand(command="askrank", description="🎓 Вопрос для ранга"),
-        BotCommand(command="myrank", description="📊 Мой ранг"),
-        BotCommand(command="exam", description="📝 Начать экзамен"),
-        BotCommand(command="exam_cancel", description="🚫 Отменить экзамен"),
-        BotCommand(command="rank_help", description="📖 О ранговой системе"),
+        BotCommand(command="snake", description="🐍 Играть в Змеюку"),
+        BotCommand(command="topsnake", description="🏆 ТОП игроков Змеюки"),
         BotCommand(command="weather", description="🌍 Погода в городе"),
+        BotCommand(command="reset", description="🔄 Сбросить историю диалога"),
+        BotCommand(command="help", description="ℹ️ Общая справка"),
     ]
     await bot.set_my_commands(commands)
-    print("✅ Меню команд установлено!")
+    print("✅ Меню команд успешно обновлено!")
 
 # ------------------------------------------------------------
 # КОМАНДЫ БОТА
 # ------------------------------------------------------------
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    await message.answer("Я бот от milk. Упомяни меня @DeadPIHTOaibot или напиши /ask вопрос. 📚 Вызвать справку - /help")
+    # Логика для быстрого старта игры из инлайна
+    if message.text and "play_snake" in message.text:
+        from modules.snake import cmd_snake
+        await cmd_snake(message)
+        return
+
+    # Миниатюрное и красивое приветствие
+    welcome_text = (
+        "👋 <b>Привет! Я бот от milk.</b>\n\n"
+        "Пиши <code>/ask</code>, либо: 🧠\n"
+        "↳ <i>Просто напиши что-нибудь в ответ!</i>"
+    )
+
+    await message.answer(welcome_text, parse_mode="HTML")
 
 @dp.message(Command("reset"))
 async def cmd_reset(message: Message):
@@ -111,32 +124,27 @@ async def cmd_reset(message: Message):
     conversation_history.clear_history(chat_id, user_id)
     await message.answer("🧹 История диалога очищена!")
 
+
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
-    help_text = """\
-🤖 <b>dead pihto — умный ассистент</b>
+    help_text = (
+        "<b>dead pihto</b> ⎯ умный ассистент от <b>milk</b> ⚡️\n\n"
+        "<b>🤖 внутри меня НЕЙРОСЕТЬ</b>\n"
+        "• <code>/ask</code> [текст] — задать вопрос\n"
+        "• <b>Reply</b> ↳ на моё сообщение — я отвечу\n"
+        "• <code>/reset</code> — очистить историю контекста\n\n"
 
-<b>👀Как использовать:</b>
-• /start — приветствие бота
-• /ask вопрос — задать вопрос
-• @DeadPIHTOaibot вопрос — обратиться в группе
-• Ответь на моё сообщение — я пойму контекст
-• /reset — сбросить историю
-• /help — эта справка
+        "<b>🎮 РАЗВЛЕЧЕНИЯ</b>\n"
+        "• <code>/snake</code> — запустить Змейку\n"
+        "• <code>/topsnake</code> — таблица рекордов\n\n"
 
-📈 Система рангов:
-• /askrank вопрос — вопрос с учётом ранга
-• /myrank — показать профиль
-• /exam — начать экзамен
-• /exam_cancel — прервать экзамен
-• /rank_help — справка по рангам
+        "<b>🌍 ПРОЧЕЕ</b>\n"
+        "• <code>/weather</code> [город] — прогноз погоды\n"
+        "• <code>/help</code> — эта справка\n\n"
 
-🌍 Погода:
-• /weather Москва — погода в городе
-
-Приятного пользования 💥
-Создатель: milk @thesunissad
-"""
+        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        "Создатель: @thesunissad 💥"
+    )
     await message.answer(help_text, parse_mode="HTML")
 
 @dp.message(Command("ask"))
@@ -151,40 +159,29 @@ async def cmd_ask(message: Message):
 # ОБРАБОТКА УПОМИНАНИЙ И ОТВЕТОВ
 # ------------------------------------------------------------
 
-@dp.message(~F.text.startswith("/"))
+# 2. Глобальный хендлер (ВАЖНО: добавляем исключение для команд)
+@dp.message(F.text, ~F.text.startswith("/"))
 async def global_message_handler(message: Message):
+    # Если это группа, сохраняем чат
     if message.chat.type != "private":
-        if message.chat.type != "private":
-            from utils.chats_db import save_chat
-            title = message.chat.title or "Без названия"
-            save_chat(message.chat.id, message.chat.type, title)
-            print(f"💾 Сохранён чат: {message.chat.id} ({title})")
-    text = message.text or message.caption or ""
-    bot_id = (await bot.me()).id
-    bot_username = (await bot.me()).username
+        title = message.chat.title or "Без названия"
+        save_chat(message.chat.id, message.chat.type, title)
 
-    # 1. Сначала логируем для отладки
-    print(f"📥 ТЕКСТ: '{text[:30]}...' | chat_id={message.chat.id}")
+    text = message.text or ""
 
-    # 2. Логика мата (только если это ответ на сообщение бота)
-    if message.reply_to_message and message.reply_to_message.from_user.id == bot_id:
-        if contains_bad_words(text):
-            reaction = get_bad_word_reaction()
-            await message.reply(reaction)
-            print(f"⚠️ Мат обработан.")
-            return
+    me = await bot.get_me()
+    bot_id = me.id
+    bot_username = me.username
 
-        # Если это просто текстовый ответ боту без мата — отвечаем через GigaChat
-        if text.strip():
-            await ask_gigachat(message, text.strip())
-            return
+    # Проверяем: это ответ боту или упоминание?
+    is_reply_to_bot = message.reply_to_message and message.reply_to_message.from_user.id == bot_id
+    is_mention = f"@{bot_username}" in text
 
-    # 3. Логика упоминания @botname
-    if f"@{bot_username}" in text:
-        query = text.replace(f"@{bot_username}", "", 1).strip()
-        if query:
-            await ask_gigachat(message, query)
-        return
+    # В личке отвечаем на всё, что не команда. В группах — только на упоминания/реплаи.
+    if message.chat.type == "private" or is_mention or is_reply_to_bot:
+        # Убираем имя бота из текста для чистоты запроса к ИИ
+        clean_text = text.replace(f"@{bot_username}", "").strip()
+        await ask_gigachat(message, clean_text)
 
 # ------------------------------------------------------------
 # ЗАПУСК
@@ -202,7 +199,9 @@ def run_health_server():
 async def main():
     Thread(target=run_health_server, daemon=True).start()
     await asyncio.sleep(2)
-    ensure_owner_rank()
+
+    init_db()  # Создаем таблицы базы данных
+
     await bot.delete_webhook(drop_pending_updates=True)
     await set_commands()
     init_gigachat(giga, SYSTEM_PROMPT)
