@@ -1,22 +1,24 @@
 FROM python:3.11-slim
 
-# Устанавливаем рабочую директорию
+# 1. Ставим общую рабочую директорию
 WORKDIR /app
 
-# Отключаем буферизацию логов (чтобы видеть принты в консоли Docker сразу)
-# и создание .pyc файлов
+# 2. Настройки для логов в реальном времени
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Сначала копируем только requirements для использования кэша слоёв
-COPY requirements.txt .
+# 3. Копируем requirements (путь должен быть правильным!)
+# Если файл в корне проекта:
+COPY aibot.py/requirements.txt .
+# Если файл уже в корне PythonProject, то просто: COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем всё содержимое проекта
+# 4. Копируем ВЕСЬ проект в /app
 COPY . .
 
-# Переходим в папку, где лежит основной скрипт
-WORKDIR /app
+# 5. КРИТИЧЕСКИЙ МОМЕНТ: переходим именно туда, где лежит главный файл
+WORKDIR /app/aibot.py
 
-# Запускаем, указывая путь к файлу относительно /app
-CMD ["python", "/app/aibot.py/chat_aibot.py"]
+# 6. Запускаем без указания папки (так как мы уже в ней)
+CMD ["python", "chat_aibot.py"]
