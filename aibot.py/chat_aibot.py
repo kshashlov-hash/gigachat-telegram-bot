@@ -36,6 +36,7 @@ from utils.chats_db import get_all_chats
 
 # Импорт БД (теперь без лишних функций рангов)
 from db_game.database import init_db
+from db_game.database import create_user
 
 # Роутеры
 from modules.weather import router as weather_router
@@ -104,6 +105,7 @@ async def set_commands():
 # ------------------------------------------------------------
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
+    create_user(message.from_user.id, message.from_user.username, message.from_user.first_name)
     # Логика для быстрого старта игры из инлайна
     if message.text and "play_snake" in message.text:
         from modules.snake import cmd_snake
@@ -113,8 +115,8 @@ async def cmd_start(message: Message):
     # Миниатюрное и красивое приветствие
     welcome_text = (
         "👋 <b>Привет! Я бот от milk.</b>\n\n"
-        "Пиши <code>/ask</code>, либо: 🧠\n"
         "↳ <i>Просто напиши что-нибудь в ответ!</i>"
+        "/help - справка"
     )
 
     await message.answer(welcome_text, parse_mode="HTML")
@@ -180,12 +182,14 @@ async def cmd_broadcast(message: Message):
 
     for chat_id in chats:
         try:
-            await bot.send_message(chat_id, broadcast_text, parse_mode="HTML")
+            # Убеждаемся, что ID — это число
+            target_id = int(chat_id)
+            await bot.send_message(target_id, broadcast_text, parse_mode="HTML")
             count += 1
-            # Небольшая пауза, чтобы Telegram не забанил за спам
             await asyncio.sleep(0.05)
         except Exception as e:
-            logging.error(f"Ошибка отправки в чат {chat_id}: {e}")
+            # Это напечатается в логах Render, и мы поймем причину
+            logging.error(f"❌ Не удалось отправить в {chat_id}: {e}")
 
     await message.answer(f"✅ Рассылка завершена! Доставлено в {count} чатов.")
 
