@@ -114,12 +114,46 @@ async def cmd_start(message: Message):
 
     # Миниатюрное и красивое приветствие
     welcome_text = (
-        "👋 <b>Привет! Я бот от milk.</b>\n\n"
+        "👋 <b>Привет! Я бот от milk.</b>\n"
+        "/help - справка\n\n"
         "↳ <i>Просто напиши что-нибудь в ответ!</i>"
-        "/help - справка"
     )
 
     await message.answer(welcome_text, parse_mode="HTML")
+
+
+@dp.message(Command("broadcast"))
+async def cmd_broadcast(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    broadcast_text = message.text.replace("/broadcast", "", 1).strip()
+    if not broadcast_text:
+        await message.answer("⚠️ Напиши текст рассылки.")
+        return
+
+    # Предположим, get_all_chats() возвращает список кортежей: (id, type, name)
+    all_records = get_all_chats()
+
+    count = 0
+    # Фильтруем: оставляем только те записи, где тип чата НЕ 'private'
+    # В кортеже (-1003877921159, 'supergroup', '...') тип — это второй элемент [1]
+    target_chats = [record for record in all_records if record[1] in ['group', 'supergroup']]
+
+    await message.answer(f"🚀 Начинаю рассылку на {len(target_chats)} общих чатов...")
+
+    for record in target_chats:
+        try:
+            # Извлекаем ID из первого элемента кортежа
+            chat_id = int(record[0])
+
+            await bot.send_message(chat_id, broadcast_text, parse_mode="HTML")
+            count += 1
+            await asyncio.sleep(0.05)
+        except Exception as e:
+            logging.error(f"❌ Не удалось отправить в {record[0]}: {e}")
+
+    await message.answer(f"✅ Рассылка завершена! Доставлено в {count} групп.")
 
 @dp.message(Command("reset"))
 async def cmd_reset(message: Message):
@@ -158,40 +192,6 @@ async def cmd_ask(message: Message):
         await message.answer("Напиши свой вопрос после команды /ask")
         return
     await ask_gigachat(message, query)
-
-
-@dp.message(Command("broadcast"))
-async def cmd_broadcast(message: Message):
-    # Проверка: только ты можешь использовать эту команду
-    if message.from_user.id != ADMIN_ID:
-        return  # Бот просто игнорирует команду от чужих
-
-    # Извлекаем текст сообщения (всё, что после /broadcast)
-    broadcast_text = message.text.replace("/broadcast", "", 1).strip()
-
-    if not broadcast_text:
-        await message.answer("⚠️ Напиши текст рассылки после команды. \nПример: `/broadcast Всем привет!`")
-        return
-
-    # Получаем список всех чатов из твоей БД
-    # Предполагаем, что get_all_chats() возвращает список chat_id
-    chats = get_all_chats()
-
-    count = 0
-    await message.answer(f"🚀 Начинаю рассылку на {len(chats)} чатов...")
-
-    for chat_id in chats:
-        try:
-            # Убеждаемся, что ID — это число
-            target_id = int(chat_id)
-            await bot.send_message(target_id, broadcast_text, parse_mode="HTML")
-            count += 1
-            await asyncio.sleep(0.05)
-        except Exception as e:
-            # Это напечатается в логах Render, и мы поймем причину
-            logging.error(f"❌ Не удалось отправить в {chat_id}: {e}")
-
-    await message.answer(f"✅ Рассылка завершена! Доставлено в {count} чатов.")
 
 # ------------------------------------------------------------
 # ОБРАБОТКА УПОМИНАНИЙ И ОТВЕТОВ
