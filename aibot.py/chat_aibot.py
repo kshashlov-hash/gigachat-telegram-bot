@@ -41,6 +41,7 @@ from db_game.database import create_user
 # Роутеры
 from modules.weather import router as weather_router
 from modules.snake import router as snake_router
+from modules.about import router as portfolio_router
 # ------------------------------------------------------------
 # ЗАГРУЗКА ПЕРЕМЕННЫХ
 # ------------------------------------------------------------
@@ -57,6 +58,7 @@ dp = Dispatcher()
 
 dp.include_router(snake_router)
 dp.include_router(weather_router)
+dp.include_router(portfolio_router)
 
 giga = GigaChat(
     credentials=GIGACHAT_CRED,
@@ -96,6 +98,7 @@ async def set_commands():
         BotCommand(command="weather", description="🌍 Погода в городе"),
         BotCommand(command="reset", description="🔄 Сбросить историю диалога"),
         BotCommand(command="help", description="ℹ️ Общая справка"),
+        BotCommand(command="resume", description="💼 Посмотреть визитку создателя"),
     ]
     await bot.set_my_commands(commands)
     print("✅ Меню команд успешно обновлено!")
@@ -179,6 +182,7 @@ async def cmd_help(message: Message):
         "<b>🌍 ПРОЧЕЕ</b>\n"
         "• <code>/weather</code> [город] — прогноз погоды\n"
         "• <code>/help</code> — эта справка\n\n"
+        "• <code>/resume</code> — <b>веб-резюме milk</b> 🔥\n"
 
         "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
         "Создатель: <b>milk</b> @thesunissad 💥"
