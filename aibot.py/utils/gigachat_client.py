@@ -24,7 +24,7 @@ _model_name = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3-8b-instruct:free
 def init_gigachat(api_key: str, system_prompt_dict: dict):
     global _client, _system_prompt
     _client = AsyncOpenAI(
-        base_url="[https://openrouter.ai/api/v1](https://openrouter.ai/api/v1)",
+        base_url="https://openrouter.ai/api/v1",  # Чистая строка, никаких []()
         api_key=api_key
     )
     _system_prompt = system_prompt_dict
