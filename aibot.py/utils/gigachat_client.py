@@ -65,7 +65,7 @@ async def ask_gigachat(message, query):
 
         # Асинхронный запрос к актуальной бесплатной модели
         completion = await _client.chat.completions.create(
-            model="qwen/qwen-2.5-coder-32b-instruct:free",  # <-- Меняем здесь
+            model="google/gemini-2.5-flash:free",  # Ставим железный бесплатный Flash
             messages=messages,
             extra_headers={
                 "HTTP-Referer": "https://localhost:3000",
