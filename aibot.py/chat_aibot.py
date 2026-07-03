@@ -3,8 +3,10 @@ import asyncio
 import logging
 import http.server
 import socketserver
+import base64
 from threading import Thread
 from pathlib import Path
+from io import BytesIO
 from dotenv import load_dotenv
 # Определяем путь к папке, где лежит этот скрипт (aibot.py)
 BASE_DIR = Path(__file__).resolve().parent
@@ -210,6 +212,43 @@ async def global_message_handler(message: Message):
         # Убираем имя бота из текста для чистоты запроса к ИИ
         clean_text = text.replace(f"@{bot_username}", "").strip()
         await ask_gigachat(message, clean_text)
+
+
+@dp.message(F.photo)
+async def photo_message_handler(message: types.Message):
+    # Если это группа, сохраняем чат
+    if message.chat.type != "private":
+        title = message.chat.title or "Без названия"
+        save_chat(message.chat.id, message.chat.type, title)
+
+    text = message.caption or ""  # Текст под картинкой (если есть)
+
+    me = await bot.get_me()
+    is_reply_to_bot = message.reply_to_message and message.reply_to_message.from_user.id == me.id
+    is_mention = f"@{me.username}" in text
+
+    # В личке реагируем всегда, в группах — только на реплаи или упоминания под фото
+    if message.chat.type == "private" or is_mention or is_reply_to_bot:
+        clean_text = text.replace(f"@{me.username}", "").strip()
+
+        # Берем самое лучшее качество фото (последний элемент в массиве)
+        photo = message.photo[-1]
+
+        try:
+            # Скачиваем файл во временный буфер в оперативной памяти
+            file_in_io = BytesIO()
+            await bot.download(photo, destination=file_in_io)
+
+            # Кодируем байты в Base64 строку
+            image_bytes = file_in_io.getvalue()
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+            # Отправляем в ИИ
+            await ask_gigachat(message, query=clean_text, image_base64=image_base64)
+
+        except Exception as e:
+            logging.error(f"❌ Ошибка при обработке фото: {e}")
+            await message.reply("❌ Не удалось обработать изображение.")
 
 # ------------------------------------------------------------
 # ЗАПУСК
