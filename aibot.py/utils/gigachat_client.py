@@ -63,12 +63,12 @@ async def ask_gigachat(message, query):
         messages.extend(history)
         messages.append({"role": "user", "content": query})
 
-        # Асинхронный запрос к Llama 3.1 70B Free
+        # Асинхронный запрос к актуальной бесплатной модели
         completion = await _client.chat.completions.create(
-            model="meta-llama/llama-3.1-70b-instruct:free",
+            model="qwen/qwen-2.5-coder-32b-instruct:free",  # <-- Меняем здесь
             messages=messages,
             extra_headers={
-                "HTTP-Referer": "https://localhost:3000",  # Для статистики OpenRouter
+                "HTTP-Referer": "https://localhost:3000",
                 "X-Title": "Dead Pihto Bot",
             }
         )
