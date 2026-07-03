@@ -19,7 +19,7 @@ except ImportError as e:
 _client = None
 _system_instruction = None
 # Используем рабочую лошадку с лимитом 1500 запросов в день
-_model_name = "gemini-2.5-flash"
+_model_name = "gemini-3.1-flash-lite"
 
 
 def init_gigachat(api_key: str, system_prompt_dict: dict):
