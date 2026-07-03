@@ -1,8 +1,9 @@
 import os
 import sys
-from pathlib import Path
 import logging
-from openai import AsyncOpenAI
+from pathlib import Path
+from google import genai
+from google.genai import types as genai_types
 
 current_file = Path(__file__).resolve()
 project_root = current_file.parent.parent
@@ -16,74 +17,76 @@ except ImportError as e:
     raise
 
 _client = None
-_system_prompt = None
-_model_name = os.getenv("OPENROUTER_MODEL", "gemini-2.5-flash")
+_system_instruction = None
+# Используем рабочую лошадку с лимитом 1500 запросов в день
+_model_name = "gemini-1.5-flash"
 
 
 def init_gigachat(api_key: str, system_prompt_dict: dict):
-    global _client, _system_prompt
-    _client = AsyncOpenAI(
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-        api_key=api_key
-    )
-    _system_prompt = system_prompt_dict
+    global _client, _system_instruction
+    # Инициализируем официальный клиент Google
+    _client = genai.Client(api_key=api_key)
+    # Вытаскиваем чистый текст системного промпта
+    _system_instruction = system_prompt_dict.get("content", "Ты — полезный ИИ-ассистент.")
 
 
 async def ask_gigachat(message, query: str, image_base64: str = None):
-    """
-    Основная функция запроса к ИИ. Умеет принимать текст и опциональное фото в base64.
-    """
     chat_id = message.chat.id
     user_id = message.from_user.id
 
     await message.bot.send_chat_action(chat_id, "typing")
 
     try:
-        if _client is None or _system_prompt is None:
-            logging.error("❌ Клиент ИИ не инициализирован!")
+        if _client is None:
+            logging.error("❌ Клиент Gemini не инициализирован!")
             await message.reply("❌ Ошибка инициализации ИИ-модуля.")
             return
 
-        # Получаем историю (текстовую)
+        # Получаем историю (текст)
         history = conversation_history.get_history(chat_id, user_id)
 
-        messages = [_system_prompt]
-        messages.extend(history)
+        # Переводим историю в формат Google Gemini
+        contents = []
+        for h in history:
+            role = "user" if h["role"] == "user" else "model"
+            contents.append(genai_types.Content(
+                role=role,
+                parts=[genai_types.Part.from_text(text=h["content"])]
+            ))
 
-        # Формируем контент для текущего сообщения
+        # Собираем текущий запрос
+        current_parts = []
+
+        # Если прилетело фото, добавляем его через байты
         if image_base64:
-            # Если есть фото, структура контента становится массивом
-            current_content = [
-                {"type": "text", "text": query or "Что на этой картинке?"},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_base64}"
-                    }
-                }
-            ]
-        else:
-            # Если фото нет — обычная строка текста
-            current_content = query
+            import base64
+            image_data = base64.b64decode(image_base64)
+            current_parts.append(genai_types.Part.from_bytes(
+                data=image_data,
+                mime_type="image/jpeg"
+            ))
 
-        messages.append({"role": "user", "content": current_content})
+        current_parts.append(genai_types.Part.from_text(text=query or "Что на этой картинке?"))
 
-        completion = await _client.chat.completions.create(
+        contents.append(genai_types.Content(role="user", parts=current_parts))
+
+        # Запрос к Gemini API (вызов синхронный, но в потоке httpx под капотом ок)
+        response = _client.models.generate_content(
             model=_model_name,
-            messages=messages,
-            extra_headers={
-                "HTTP-Referer": "https://localhost:3000",
-                "X-Title": "Dead Pihto Bot",
-            }
+            contents=contents,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=_system_instruction,
+                temperature=0.7
+            )
         )
 
-        answer = completion.choices[0].message.content
+        answer = response.text
 
         if not answer:
             await message.reply("🤖 Не смог разобрать запрос. Попробуй еще раз.")
             return
 
-        # В историю сохраняем только текст, чтобы не раздувать БД картинками
+        # Пишем в историю
         conversation_history.add_message(chat_id, user_id, "user", query or "[Отправлено фото]")
         conversation_history.add_message(chat_id, user_id, "assistant", answer)
 
@@ -93,5 +96,5 @@ async def ask_gigachat(message, query: str, image_base64: str = None):
         await message.reply(answer)
 
     except Exception as e:
-        logging.error(f"❌ Ошибка в ask_gigachat: {e}", exc_info=True)
+        logging.error(f"❌ Ошибка в ask_gemini: {e}", exc_info=True)
         await message.reply(f"❌ Ошибка нейросети: {str(e)}")
