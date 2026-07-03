@@ -24,8 +24,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, BotCommand, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-# GigaChat & LangChain
-from langchain_gigachat.chat_models import GigaChat
+
 
 # модули
 from utils.mat import contains_bad_words, get_bad_word_reaction, get_swear
@@ -47,7 +46,7 @@ from modules.about import router as portfolio_router
 # ------------------------------------------------------------
 
 TELEGRAM_TOKEN = os.getenv("TOKEN")
-GIGACHAT_CRED = os.getenv("GIGACHAT_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 ADMIN_ID = int(os.getenv("ADMIN_ID", 0))
 
 # ------------------------------------------------------------
@@ -59,15 +58,6 @@ dp = Dispatcher()
 dp.include_router(snake_router)
 dp.include_router(weather_router)
 dp.include_router(portfolio_router)
-
-giga = GigaChat(
-    credentials=GIGACHAT_CRED,
-    verify_ssl_certs=False,
-    model="GigaChat",
-    temperature=0.7,
-    max_tokens=1000,
-    scope="GIGACHAT_API_PERS"
-)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -174,17 +164,13 @@ async def cmd_help(message: Message):
         "• <code>/ask</code> [текст] — задать вопрос\n"
         "• <b>Reply</b> ↳ на моё сообщение — я отвечу\n"
         "• <code>/reset</code> — очистить историю контекста\n\n"
-
         "<b>🎮 РАЗВЛЕЧЕНИЯ</b>\n"
         "• <code>/snake</code> — запустить Змейку\n"
         "• <code>/topsnake</code> — таблица рекордов\n\n"
-
         "<b>🌍 ПРОЧЕЕ</b>\n"
         "• <code>/weather</code> [город] — прогноз погоды\n"
-        "• <code>/help</code> — эта справка\n\n"
-        "• <code>/resume</code> — <b>веб-резюме milk</b> 🔥\n"
-
-        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        "• <code>/help</code> — эта справка\n"
+        "• <code>/resume</code> — <b>веб-резюме milk</b> 🔥\n\n"
         "Создатель: <b>milk</b> @thesunissad 💥"
     )
     await message.answer(help_text, parse_mode="HTML")
@@ -246,9 +232,16 @@ async def main():
 
     await bot.delete_webhook(drop_pending_updates=True)
     await set_commands()
-    init_gigachat(giga, SYSTEM_PROMPT)
-    print("🚀 Бот запущен и слушает сообщения...")
+
+    # Извлекаем ключ OpenRouter из .env
+    OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY")
+
+    # Инициализируем наш новый асинхронный клиент
+    init_gigachat(OPENROUTER_KEY, SYSTEM_PROMPT)
+
+    print("🚀 Бот запущен и слушает сообщения через OpenRouter (Llama 3.1)...")
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
