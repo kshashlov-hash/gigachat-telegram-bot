@@ -1,3 +1,224 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+:root {
+  --bg-espresso: #2B1A12;
+  --mint-brutal: #B9E5C8;
+  /* Добавляем новый цвет для голографического эффекта */
+  --purple-glow: #A084FF;
+  --text-white: #F5F5F5;
+  --text-gray: #A09894;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-espresso);
+  font-family: 'SF Pro Display', sans-serif;
+  color: var(--text-white);
+}
+
+.app-container {
+  position: relative;
+  min-height: 100vh;
+  padding: 20px;
+  overflow-x: hidden;
+  /* Убедимся, что фон с градиентом */
+  background: radial-gradient(circle at center, #352119 0%, #2B1A12 100%);
+}
+
+/* ГЛУБОКИЕ ФОНОВЫЕ СФЕРЫ */
+.background-glow {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Сфера 1 (Мятная) - делаем больше и ярче */
+.sphere-1 {
+  top: -100px;
+  left: -200px;
+  width: 700px;
+  height: 700px;
+  background: var(--mint-brutal);
+  filter: blur(150px);
+  opacity: 0.2;
+}
+
+/* Новая сфера 2 (Фиолетовая) - для контраста, как на референсе */
+.sphere-2 {
+  bottom: -150px;
+  right: -100px;
+  width: 600px;
+  height: 600px;
+  background: var(--purple-glow);
+  filter: blur(140px);
+  opacity: 0.18;
+}
+
+/* Дополнительная малая сфера для глубины */
+.sphere-3 {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(185,229,200,0.15) 0%, rgba(160,132,255,0.05) 100%);
+  filter: blur(100px);
+  opacity: 0.1;
+  z-index: 1; /* Между фоном и стеклом */
+}
+
+/* Общий стиль "матового стекла" - сохраняем, дорабатываем */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(18px); /* Чуть уменьшим общее размытие для bento, чтобы сфокусироваться на нике */
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(185, 229, 200, 0.1);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Ограничиваем контент - сохраняем */
+.main-content {
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Шапка сайта - сохраняем */
+.glass-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(43, 26, 18, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(185, 229, 200, 0.05);
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: -20px -20px 20px -20px;
+}
+
+/* Навигация и кнопка - сохраняем */
+.nav-center { display: flex; gap: 20px; color: var(--text-gray); font-size: 14px; font-weight: 500; }
+.nav-center span { cursor: pointer; transition: color 0.2s ease; }
+.nav-center span:hover { color: var(--mint-brutal); }
+.connect-btn { background: var(--mint-brutal); color: var(--bg-espresso); border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+/* ЗОНА НИКНЕЙМА - ГЛУБОКАЯ ДОРАБОТКА */
+.brand-zone {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 60px 0 50px 0; /* Чуть увеличим отступы */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Прозрачные стеклянные стрелки - доработка тона и свечения */
+.side-arrow-glass {
+  font-size: 72px; /* Чуть меньше, но изящнее */
+  font-weight: 100;
+  /* Изменим тон на фиолетовый, как на референсе, для баланса */
+  color: rgba(160, 132, 255, 0.15);
+  user-select: none;
+  cursor: pointer;
+  padding: 15px;
+
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  /* Добавим мягкое свечение */
+  text-shadow: 0 0 15px rgba(160, 132, 255, 0.1);
+
+  transition: all 0.3s ease;
+}
+
+.side-arrow-glass:hover {
+  color: rgba(185, 229, 200, 0.7);
+  text-shadow: 0 0 25px rgba(185, 229, 200, 0.5);
+  transform: scale(1.1);
+}
+
+.side-arrow-glass:active {
+  transform: scale(0.96);
+  color: var(--mint-brutal);
+}
+
+/* ОБЪЕМНОЕ СТЕКЛЯННОЕ ОКНО ДЛЯ НИКА - ДОРАБОТКА ГЛУБИНЫ */
+.logo-glass-box {
+  background: rgba(255, 255, 255, 0.015); /* Еще прозрачнее */
+  /* Усиленное глубокое размытие */
+  backdrop-filter: blur(35px);
+  -webkit-backdrop-filter: blur(35px);
+
+  /* Сложная рамка - сохраняем и делаем тоньше */
+  border-top: 1px solid rgba(185, 229, 200, 0.3);
+  border-left: 1px solid rgba(185, 229, 200, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+
+  border-radius: 28px; /* Чуть более округлые */
+  padding: 20px 70px;
+
+  /* Улучшенные глубокие тени для объема */
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.5), /* Глубокая внешняя тень */
+    /* Добавляем промежуточную тень для мягкости */
+    0 10px 20px rgba(0, 0, 0, 0.2),
+    /* Глубокие внутренние блики для толщины стекла */
+    inset 0 0 25px rgba(185, 229, 200, 0.12),
+    inset 0 4px 6px rgba(185, 229, 200, 0.25),
+    /* Добавим фиолетовый блик снизу */
+    inset 0 -2px 5px rgba(160, 132, 255, 0.1);
+
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.logo-glass-box:hover {
+  transform: translateY(-5px) scale(1.015);
+  border-color: rgba(185, 229, 200, 0.5);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.6),
+    inset 0 0 30px rgba(185, 229, 200, 0.2),
+    inset 0 6px 10px rgba(185, 229, 200, 0.35);
+}
+
+/* СТИЛЬ ТЕКСТА MILK - ГОЛОГРАФИЧЕСКИЙ ГРАДИЕНТ */
+h1.main-logo {
+  font-size: 72px !important; /* Чуть крупнее */
+  font-weight: 900;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 8px; /* Еще шире буквы */
+
+  /* Сложный голографический градиент, как на референсе */
+  background: linear-gradient(135deg, #FFFFFF 0%, var(--mint-brutal) 50%, var(--purple-glow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  /* Усиленное голографическое свечение */
+  filter: drop-shadow(0 0 20px rgba(185, 229, 200, 0.25)) drop-shadow(0 0 10px rgba(160, 132, 255, 0.15));
+}
+
+/* Кастомизация Bento Grid - сохраняем */
+.bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-bottom: 40px; }
+.full-span { grid-column: span 2; }
+
+/* Остальные стили bento сохраняются без изменений... */
+.project-item { margin-bottom: 16px; }
+.project-item strong { color: var(--text-white); font-size: 16px; display: block; margin-top: 2px; }
+.project-item p { color: var(--text-gray); font-size: 13px; margin: 4px 0 0 0; }
+.project-status { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+.project-status.live { color: var(--mint-brutal); }
+.project-status.dev { color: #A39791; }
+.tech-icons { margin-top: 20px; }
+.tech-icons span { background: rgba(185, 229, 200, 0.1); border-radius: 5px; padding: 5px 10px; margin-right: 5px; color: var(--mint-brutal); font-size: 13px; }
+.stack-details { display: flex; gap: 40px; }
+.stack-details h4 { color: var(--mint-brutal); font-size: 12px; text-transform: uppercase; }
+.stack-details p { margin: 6px 0; font-size: 14px; color: var(--text-white); }
+.cursor-blink { animation: blink 1s infinite; color: var(--mint-brutal); }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.note { font-style: italic; color: var(--text-gray); font-size: 12px; margin-top: 8px; }

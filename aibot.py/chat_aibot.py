@@ -173,7 +173,7 @@ async def cmd_help(message: Message):
         "• <code>/weather</code> [город] — прогноз погоды\n"
         "• <code>/help</code> — эта справка\n"
         "• <code>/resume</code> — <b>веб-резюме milk</b> 🔥\n\n"
-        "Создатель: <b>milk</b> @thesunissad 💥"
+        "Создатель: <b>milk</b> @milkshakese 💥"
     )
     await message.answer(help_text, parse_mode="HTML")
 

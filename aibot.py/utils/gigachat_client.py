@@ -18,7 +18,7 @@ except ImportError as e:
 
 _client = None
 _system_instruction = None
-# Используем рабочую лошадку с лимитом 1500 запросов в день
+# Используем модель из списка квот с лимитом 500 запросов в день
 _model_name = "gemini-3.1-flash-lite"
 
 
@@ -45,7 +45,7 @@ async def ask_gigachat(message, query: str, image_base64: str = None):
         # Получаем историю (текст)
         history = conversation_history.get_history(chat_id, user_id)
 
-        # Переводим историю в формат Google Gemini
+        # Переводим историю в формат Google Gemini через genai_types
         contents = []
         for h in history:
             role = "user" if h["role"] == "user" else "model"
@@ -70,7 +70,7 @@ async def ask_gigachat(message, query: str, image_base64: str = None):
 
         contents.append(genai_types.Content(role="user", parts=current_parts))
 
-        # Запрос к Gemini API (вызов синхронный, но в потоке httpx под капотом ок)
+        # Запрос к Gemini API
         response = _client.models.generate_content(
             model=_model_name,
             contents=contents,
