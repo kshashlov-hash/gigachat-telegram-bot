@@ -7,11 +7,12 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Динамические фоновые сферы iOS */}
       <div className="ios-bg-sphere-1"></div>
       <div className="ios-bg-sphere-2"></div>
 
       <main className="main-content">
-        {/* iOS Header */}
+        {/* Шапка профиля */}
         <header className="ios-header-zone">
           <div className="profile-container">
             <div
@@ -34,19 +35,22 @@ function App() {
           </button>
         </header>
 
-        {/* Apple Bento Grid */}
+        {/* Сетка Bento Grid */}
         <div className="apple-bento-grid">
-          {/* Welcome Widget */}
+          {/* Блок «Обо мне» (2x1) */}
           <div className="apple-glass-card welcome-widget">
             <div className="widget-header">
               <span className="widget-icon">⚡</span>
               <h3>Обо мне</h3>
             </div>
             <h1>Создаю ботов, интерактивные веб-сайты и AI-интеграции</h1>
-            <p>Разрабатываю умных Telegram-ботов, собираю стильные веб-визитки и лендинги, а также подключаю нейросети для автоматизации задач.</p>
+            <p>
+              Разрабатываю умных Telegram-ботов, собираю стильные веб-визитки и лендинги,
+              а также подключаю нейросети для автоматизации задач.
+            </p>
           </div>
 
-          {/* Portfolio Widget */}
+          {/* Виджет «Проекты / GitHub» (1x1) */}
           <div
             className="apple-glass-card portfolio-widget-ios"
             onClick={() => window.open('https://github.com/kshashlov-hash', '_blank')}
@@ -61,7 +65,7 @@ function App() {
             <p className="action-hint">GitHub ↗</p>
           </div>
 
-          {/* Status Widget */}
+          {/* Виджет «Статус» (1x1) */}
           <div className="apple-glass-card status-widget-ios">
             <div className="widget-header-small">
               <span className="widget-icon">💻</span>
@@ -74,7 +78,7 @@ function App() {
             <p className="monospace-ios">UTF-8 | Python & React</p>
           </div>
 
-          {/* Stack Widget */}
+          {/* Виджет «Стек & Направления» (2x1) */}
           <div className="apple-glass-card stack-widget">
             <div className="widget-header">
               <span className="widget-icon">🛠</span>
@@ -99,7 +103,7 @@ function App() {
         </div>
       </main>
 
-      {/* FULLSCREEN IMAGE MODAL */}
+      {/* Полноэкранный просмотр аватара */}
       {isAvatarOpen && (
         <div className="image-modal-overlay" onClick={() => setIsAvatarOpen(false)}>
           <div className="image-modal-content">

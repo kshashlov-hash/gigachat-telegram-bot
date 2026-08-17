@@ -8,14 +8,19 @@
   --apple-text-gray: #8E8E93;
 }
 
-body, html {
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
   margin: 0;
   padding: 0;
   background-color: var(--apple-bg-base);
-  /* Пытаемся использовать системные шрифты Apple */
+  /* Системные шрифты Apple */
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
   color: var(--apple-text-white);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .app-container {
@@ -33,9 +38,10 @@ body, html {
   right: -100px;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(10, 132, 255, 0.15) 0%, rgba(0,0,0,0) 70%);
+  background: radial-gradient(circle, rgba(10, 132, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
   filter: blur(80px);
   z-index: 0;
+  pointer-events: none;
 }
 
 .ios-bg-sphere-2 {
@@ -44,9 +50,10 @@ body, html {
   left: -150px;
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(160, 132, 255, 0.1) 0%, rgba(0,0,0,0) 70%);
+  background: radial-gradient(circle, rgba(160, 132, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
   filter: blur(100px);
   z-index: 0;
+  pointer-events: none;
 }
 
 .main-content {
@@ -70,13 +77,32 @@ body, html {
   align-items: center;
 }
 
-.avatar-placeholder {
+/* АВАТАР */
+.avatar-container {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1C1C1E 0%, #000000 100%);
+  overflow: hidden;
   border: 1px solid var(--apple-border);
-  box-shadow: inset 0 2px 5px rgba(255,255,255,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+  display: block;
+  cursor: pointer;
+  background: linear-gradient(135deg, #1C1C1E 0%, #000000 100%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.avatar-container:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
 }
 
 .profile-info {
@@ -94,7 +120,7 @@ body, html {
 }
 
 h1.main-logo-apple {
-  font-size: 34px !important; /* Усиленный крупный заголовок iOS */
+  font-size: 34px;
   font-weight: 700;
   margin: 0;
   color: var(--apple-text-white);
@@ -127,8 +153,8 @@ h1.main-logo-apple {
 /* ОБЩИЙ СТИЛЬ APPLE GLASS CARD */
 .apple-glass-card {
   background: rgba(28, 28, 30, 0.4); /* Полупрозрачный матовый iOS */
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 
   border: 1px solid var(--apple-border); /* Ультра-тонкая граница */
   border-radius: 28px; /* Фирменное скругление виджетов Apple */
@@ -146,20 +172,24 @@ h1.main-logo-apple {
 
 .apple-glass-card:hover {
   transform: scale(1.02);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 /* КАСТОМИЗАЦИЯ ВИДЖЕТОВ */
-.widget-header, .widget-header-small {
+.widget-header,
+.widget-header-small {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
 }
 
-.widget-icon { font-size: 18px; }
+.widget-icon {
+  font-size: 18px;
+}
 
-.widget-header h3, .widget-header-small h3 {
+.widget-header h3,
+.widget-header-small h3 {
   color: var(--apple-text-gray);
   margin: 0;
   font-size: 12px;
@@ -200,73 +230,81 @@ h1.main-logo-apple {
   align-items: stretch;
 }
 
-.stack-details-ios div { flex: 1; }
-.stack-details-ios h4 { color: var(--apple-blue); font-size: 13px; margin: 0 0 8px 0; text-transform: uppercase; }
-.stack-details-ios p { margin: 6px 0; font-size: 15px; color: #FFFFFF; font-weight: 400; }
-.separator { width: 1px; background: var(--apple-border); }
+.stack-details-ios div {
+  flex: 1;
+}
+
+.stack-details-ios h4 {
+  color: var(--apple-blue);
+  font-size: 13px;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+}
+
+.stack-details-ios p {
+  margin: 6px 0;
+  font-size: 15px;
+  color: #FFFFFF;
+  font-weight: 400;
+}
+
+.separator {
+  width: 1px;
+  background: var(--apple-border);
+}
 
 /* Малые Виджеты (1x1) */
-.status-widget-ios, .portfolio-widget-ios {
+.status-widget-ios,
+.portfolio-widget-ios {
   padding: 20px;
-  height: 150px; /* Фиксированная высота для малого виджета */
+  min-height: 150px;
   justify-content: space-between;
 }
 
-.status-indicator { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 18px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; }
-.dot.online { background-color: #30D158; box-shadow: 0 0 10px #30D158; } /* Зеленый iOS */
-.monospace-ios { font-family: monospace; color: var(--apple-text-gray); font-size: 11px; margin: 0; }
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dot.online {
+  background-color: #30D158;
+  box-shadow: 0 0 10px #30D158;
+} /* Зеленый iOS */
+
+.monospace-ios {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: var(--apple-text-gray);
+  font-size: 11px;
+  margin: 0;
+}
 
 .portfolio-widget-ios {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.1) 0%, rgba(28,28,30,0.4) 100%);
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.1) 0%, rgba(28, 28, 30, 0.4) 100%);
   border-color: rgba(10, 132, 255, 0.3);
   cursor: pointer;
 }
 
-.project-highlight { font-weight: 700; font-size: 16px; color: #FFFFFF; margin: 0 0 4px 0; }
-.action-hint { color: var(--apple-blue); font-weight: 600; font-size: 13px; margin: 0; }
-
-/* Адаптивность для мобильных устройств iOS */
-@media (max-width: 768px) {
-  .app-container { padding: 12px; }
-  .ios-header-zone { padding: 30px 0 20px 0; }
-  h1.main-logo-apple { font-size: 28px !important; }
-  .avatar-placeholder { width: 56px; height: 56px; }
-
-  .apple-bento-grid { grid-template-columns: 1fr; gap: 12px; }
-  .welcome-widget, .stack-widget { grid-column: span 1; }
-  .stack-details-ios { flex-direction: column; gap: 16px; }
-  .separator { display: none; }
-
-  .status-widget-ios, .portfolio-widget-ios { height: auto; min-height: 130px; }
+.project-highlight {
+  font-weight: 700;
+  font-size: 16px;
+  color: #FFFFFF;
+  margin: 0 0 4px 0;
 }
 
-.avatar-container {
-  width: 64px !important;
-  height: 64px !important;
-  min-width: 64px !important;
-  min-height: 64px !important;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--apple-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  flex-shrink: 0;
-  display: block;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.avatar-img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-  object-position: top center;
-  display: block;
-}
-
-.avatar-container:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+.action-hint {
+  color: var(--apple-blue);
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0;
 }
 
 /* МОДАЛЬНОЕ ОКНО ДЛЯ ПОЛНОЭКРАННОГО ФОТО */
@@ -277,8 +315,8 @@ h1.main-logo-apple {
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   z-index: 1000;
   display: flex;
   justify-content: center;
@@ -312,6 +350,7 @@ h1.main-logo-apple {
   font-weight: 500;
 }
 
+/* АНИМАЦИИ */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -320,4 +359,40 @@ h1.main-logo-apple {
 @keyframes scaleUp {
   from { transform: scale(0.9); }
   to { transform: scale(1); }
+}
+
+/* Адаптивность для мобильных устройств iOS */
+@media (max-width: 768px) {
+  .app-container { padding: 12px; }
+  .ios-header-zone { padding: 30px 0 20px 0; }
+  h1.main-logo-apple { font-size: 28px; }
+
+  .avatar-container {
+    width: 56px;
+    height: 56px;
+  }
+
+  .apple-bento-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .welcome-widget,
+  .stack-widget {
+    grid-column: span 1;
+  }
+
+  .stack-details-ios {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .separator {
+    display: none;
+  }
+
+  .status-widget-ios,
+  .portfolio-widget-ios {
+    min-height: 130px;
+  }
 }
