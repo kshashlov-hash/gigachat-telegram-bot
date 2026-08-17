@@ -7,9 +7,8 @@ router = Router()
 
 @router.message(Command("resume"))
 async def cmd_resume(message: Message):
-    # Твоя будущая ссылка (например, на GitHub Pages или Vercel)
-    # Пока сайта нет, можешь временно поставить туда google.com для теста
-    site_url = "https://kshashlov-hash.github.io/resume"
+    # Твой реальный URL с Vercel
+    site_url = "https://milk-portfolio.vercel.app"
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -23,13 +22,13 @@ async def cmd_resume(message: Message):
     ])
 
     await message.answer(
-        "🚀 <b>milk | Backend Developer and Creator</b>\n\n"
+        "🚀 <b>milk | Bots & Automation Crafter</b>\n\n"
         "Привет! Рад, что ты здесь. Моё веб-портфолио — это интерактивная карта "
         "моих навыков, архитектурных решений и реализованных систем.\n\n"
-        "<b>Что там внутри:</b>\n"
-        "• 🛠 <b>Стек:</b> Разработка на Python (Asyncio/Aiogram) и C#\n"
+        "<b>Скиллы: </b>\n"
+        "• 🛠 <b>Стек:</b> Разработка на Python (Asyncio/Aiogram), C#, Java и JS\n"
         "• 📊 <b>Базы данных:</b> Проектирование и оптимизация SQL\n"
-        "• 🖥 <b>Проекты:</b> От AI-ассистентов до сложных систем мониторинга\n\n"
+        "• 🖥 <b>Проекты:</b> Интеграции AI любой сложности, создание лендингов и работа с API\n\n"
         "Круто, что ты сюда кликнул, веб-визитка откроется красивой шторкой прямо внутри Telegram! ⎯⎯⎯👇",
         parse_mode="HTML",
         reply_markup=kb

@@ -1,224 +1,323 @@
 :root {
-  --bg-espresso: #2B1A12;
-  --mint-brutal: #B9E5C8;
-  /* Добавляем новый цвет для голографического эффекта */
-  --purple-glow: #A084FF;
-  --text-white: #F5F5F5;
-  --text-gray: #A09894;
+  /* Новая цветовая палитра: Apple Space Gray */
+  --apple-bg-base: #000000;
+  --apple-space-gray: #1C1C1E; /* Фон для "матовых" карт */
+  --apple-border: rgba(255, 255, 255, 0.08); /* Супер-тонкая граница */
+  --apple-blue: #0A84FF; /* Акцентный синий iOS */
+  --apple-text-white: #FFFFFF;
+  --apple-text-gray: #8E8E93;
 }
 
 body, html {
   margin: 0;
   padding: 0;
-  background-color: var(--bg-espresso);
-  font-family: 'SF Pro Display', sans-serif;
-  color: var(--text-white);
+  background-color: var(--apple-bg-base);
+  /* Пытаемся использовать системные шрифты Apple */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  color: var(--apple-text-white);
+  -webkit-font-smoothing: antialiased;
 }
 
 .app-container {
   position: relative;
   min-height: 100vh;
-  padding: 20px;
+  padding: 16px; /* Стандартные отступы iOS */
   overflow-x: hidden;
-  /* Убедимся, что фон с градиентом */
-  background: radial-gradient(circle at center, #352119 0%, #2B1A12 100%);
+  background: radial-gradient(circle at 50% 0%, #1A1A1C 0%, #000000 100%);
 }
 
-/* ГЛУБОКИЕ ФОНОВЫЕ СФЕРЫ */
-.background-glow {
+/* ФОНОВЫЕ СФЕРЫ В СТИЛЕ iOS DYNAMIC WALLPAPER */
+.ios-bg-sphere-1 {
   position: absolute;
-  border-radius: 50%;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* Сфера 1 (Мятная) - делаем больше и ярче */
-.sphere-1 {
-  top: -100px;
-  left: -200px;
-  width: 700px;
-  height: 700px;
-  background: var(--mint-brutal);
-  filter: blur(150px);
-  opacity: 0.2;
-}
-
-/* Новая сфера 2 (Фиолетовая) - для контраста, как на референсе */
-.sphere-2 {
-  bottom: -150px;
+  top: -150px;
   right: -100px;
-  width: 600px;
-  height: 600px;
-  background: var(--purple-glow);
-  filter: blur(140px);
-  opacity: 0.18;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(10, 132, 255, 0.15) 0%, rgba(0,0,0,0) 70%);
+  filter: blur(80px);
+  z-index: 0;
 }
 
-/* Дополнительная малая сфера для глубины */
-.sphere-3 {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(185,229,200,0.15) 0%, rgba(160,132,255,0.05) 100%);
+.ios-bg-sphere-2 {
+  position: absolute;
+  bottom: -100px;
+  left: -150px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(160, 132, 255, 0.1) 0%, rgba(0,0,0,0) 70%);
   filter: blur(100px);
-  opacity: 0.1;
-  z-index: 1; /* Между фоном и стеклом */
+  z-index: 0;
 }
 
-/* Общий стиль "матового стекла" - сохраняем, дорабатываем */
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(18px); /* Чуть уменьшим общее размытие для bento, чтобы сфокусироваться на нике */
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(185, 229, 200, 0.1);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-}
-
-/* Ограничиваем контент - сохраняем */
 .main-content {
-  max-width: 800px;
+  max-width: 700px; /* Более компактно в стиле iOS */
   margin: 0 auto;
   position: relative;
   z-index: 1;
 }
 
-/* Шапка сайта - сохраняем */
-.glass-header {
+/* iOS HEADER ZONE */
+.ios-header-zone {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(43, 26, 18, 0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(185, 229, 200, 0.05);
-  padding: 12px 24px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  margin: -20px -20px 20px -20px;
+  padding: 40px 0 30px 0;
 }
 
-/* Навигация и кнопка - сохраняем */
-.nav-center { display: flex; gap: 20px; color: var(--text-gray); font-size: 14px; font-weight: 500; }
-.nav-center span { cursor: pointer; transition: color 0.2s ease; }
-.nav-center span:hover { color: var(--mint-brutal); }
-.connect-btn { background: var(--mint-brutal); color: var(--bg-espresso); border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
-
-/* ЗОНА НИКНЕЙМА - ГЛУБОКАЯ ДОРАБОТКА */
-.brand-zone {
+.profile-container {
   display: flex;
-  justify-content: space-between;
+  gap: 16px;
   align-items: center;
-  padding: 60px 0 50px 0; /* Чуть увеличим отступы */
-  width: 100%;
-  box-sizing: border-box;
 }
 
-/* Прозрачные стеклянные стрелки - доработка тона и свечения */
-.side-arrow-glass {
-  font-size: 72px; /* Чуть меньше, но изящнее */
-  font-weight: 100;
-  /* Изменим тон на фиолетовый, как на референсе, для баланса */
-  color: rgba(160, 132, 255, 0.15);
-  user-select: none;
-  cursor: pointer;
-  padding: 15px;
-
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  /* Добавим мягкое свечение */
-  text-shadow: 0 0 15px rgba(160, 132, 255, 0.1);
-
-  transition: all 0.3s ease;
+.avatar-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1C1C1E 0%, #000000 100%);
+  border: 1px solid var(--apple-border);
+  box-shadow: inset 0 2px 5px rgba(255,255,255,0.05);
 }
 
-.side-arrow-glass:hover {
-  color: rgba(185, 229, 200, 0.7);
-  text-shadow: 0 0 25px rgba(185, 229, 200, 0.5);
-  transform: scale(1.1);
+.profile-info {
+  display: flex;
+  flex-direction: column;
 }
 
-.side-arrow-glass:active {
-  transform: scale(0.96);
-  color: var(--mint-brutal);
-}
-
-/* ОБЪЕМНОЕ СТЕКЛЯННОЕ ОКНО ДЛЯ НИКА - ДОРАБОТКА ГЛУБИНЫ */
-.logo-glass-box {
-  background: rgba(255, 255, 255, 0.015); /* Еще прозрачнее */
-  /* Усиленное глубокое размытие */
-  backdrop-filter: blur(35px);
-  -webkit-backdrop-filter: blur(35px);
-
-  /* Сложная рамка - сохраняем и делаем тоньше */
-  border-top: 1px solid rgba(185, 229, 200, 0.3);
-  border-left: 1px solid rgba(185, 229, 200, 0.15);
-  border-right: 1px solid rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-
-  border-radius: 28px; /* Чуть более округлые */
-  padding: 20px 70px;
-
-  /* Улучшенные глубокие тени для объема */
-  box-shadow:
-    0 25px 60px rgba(0, 0, 0, 0.5), /* Глубокая внешняя тень */
-    /* Добавляем промежуточную тень для мягкости */
-    0 10px 20px rgba(0, 0, 0, 0.2),
-    /* Глубокие внутренние блики для толщины стекла */
-    inset 0 0 25px rgba(185, 229, 200, 0.12),
-    inset 0 4px 6px rgba(185, 229, 200, 0.25),
-    /* Добавим фиолетовый блик снизу */
-    inset 0 -2px 5px rgba(160, 132, 255, 0.1);
-
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-}
-
-.logo-glass-box:hover {
-  transform: translateY(-5px) scale(1.015);
-  border-color: rgba(185, 229, 200, 0.5);
-  box-shadow:
-    0 30px 70px rgba(0, 0, 0, 0.6),
-    inset 0 0 30px rgba(185, 229, 200, 0.2),
-    inset 0 6px 10px rgba(185, 229, 200, 0.35);
-}
-
-/* СТИЛЬ ТЕКСТА MILK - ГОЛОГРАФИЧЕСКИЙ ГРАДИЕНТ */
-h1.main-logo {
-  font-size: 72px !important; /* Чуть крупнее */
-  font-weight: 900;
-  margin: 0;
+.profile-info .subtitle {
+  color: var(--apple-text-gray);
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 8px; /* Еще шире буквы */
-
-  /* Сложный голографический градиент, как на референсе */
-  background: linear-gradient(135deg, #FFFFFF 0%, var(--mint-brutal) 50%, var(--purple-glow) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-
-  /* Усиленное голографическое свечение */
-  filter: drop-shadow(0 0 20px rgba(185, 229, 200, 0.25)) drop-shadow(0 0 10px rgba(160, 132, 255, 0.15));
+  letter-spacing: 0.5px;
 }
 
-/* Кастомизация Bento Grid - сохраняем */
-.bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-bottom: 40px; }
-.full-span { grid-column: span 2; }
+h1.main-logo-apple {
+  font-size: 34px !important; /* Усиленный крупный заголовок iOS */
+  font-weight: 700;
+  margin: 0;
+  color: var(--apple-text-white);
+  letter-spacing: -0.5px; /* Сильное сужение Apple */
+}
 
-/* Остальные стили bento сохраняются без изменений... */
-.project-item { margin-bottom: 16px; }
-.project-item strong { color: var(--text-white); font-size: 16px; display: block; margin-top: 2px; }
-.project-item p { color: var(--text-gray); font-size: 13px; margin: 4px 0 0 0; }
-.project-status { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-.project-status.live { color: var(--mint-brutal); }
-.project-status.dev { color: #A39791; }
-.tech-icons { margin-top: 20px; }
-.tech-icons span { background: rgba(185, 229, 200, 0.1); border-radius: 5px; padding: 5px 10px; margin-right: 5px; color: var(--mint-brutal); font-size: 13px; }
-.stack-details { display: flex; gap: 40px; }
-.stack-details h4 { color: var(--mint-brutal); font-size: 12px; text-transform: uppercase; }
-.stack-details p { margin: 6px 0; font-size: 14px; color: var(--text-white); }
-.cursor-blink { animation: blink 1s infinite; color: var(--mint-brutal); }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-.note { font-style: italic; color: var(--text-gray); font-size: 12px; margin-top: 8px; }
+.ios-connect-btn {
+  background: var(--apple-blue);
+  color: #FFFFFF;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 18px; /* Сильное скругление кнопки iOS */
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.ios-connect-btn:hover {
+  opacity: 0.9;
+}
+
+/* APPLE BENTO GRID */
+.apple-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px; /* Отступы как между виджетами iOS */
+}
+
+/* ОБЩИЙ СТИЛЬ APPLE GLASS CARD */
+.apple-glass-card {
+  background: rgba(28, 28, 30, 0.4); /* Полупрозрачный матовый iOS */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border: 1px solid var(--apple-border); /* Ультра-тонкая граница */
+  border-radius: 28px; /* Фирменное скругление виджетов Apple */
+  padding: 24px;
+
+  /* Многослойные тени для объема Apple */
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.3),
+    0 4px 6px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.apple-glass-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+/* КАСТОМИЗАЦИЯ ВИДЖЕТОВ */
+.widget-header, .widget-header-small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.widget-icon { font-size: 18px; }
+
+.widget-header h3, .widget-header-small h3 {
+  color: var(--apple-text-gray);
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Welcome Widget (2x1) */
+.welcome-widget {
+  grid-column: span 2;
+}
+
+.welcome-widget h1 {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  margin: 0 0 12px 0;
+  color: #FFFFFF;
+}
+
+.welcome-widget p {
+  color: #D1D1D6;
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Stack Widget (2x1) */
+.stack-widget {
+  grid-column: span 2;
+}
+
+.stack-details-ios {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.stack-details-ios div { flex: 1; }
+.stack-details-ios h4 { color: var(--apple-blue); font-size: 13px; margin: 0 0 8px 0; text-transform: uppercase; }
+.stack-details-ios p { margin: 6px 0; font-size: 15px; color: #FFFFFF; font-weight: 400; }
+.separator { width: 1px; background: var(--apple-border); }
+
+/* Малые Виджеты (1x1) */
+.status-widget-ios, .portfolio-widget-ios {
+  padding: 20px;
+  height: 150px; /* Фиксированная высота для малого виджета */
+  justify-content: space-between;
+}
+
+.status-indicator { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 18px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.online { background-color: #30D158; box-shadow: 0 0 10px #30D158; } /* Зеленый iOS */
+.monospace-ios { font-family: monospace; color: var(--apple-text-gray); font-size: 11px; margin: 0; }
+
+.portfolio-widget-ios {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.1) 0%, rgba(28,28,30,0.4) 100%);
+  border-color: rgba(10, 132, 255, 0.3);
+  cursor: pointer;
+}
+
+.project-highlight { font-weight: 700; font-size: 16px; color: #FFFFFF; margin: 0 0 4px 0; }
+.action-hint { color: var(--apple-blue); font-weight: 600; font-size: 13px; margin: 0; }
+
+/* Адаптивность для мобильных устройств iOS */
+@media (max-width: 768px) {
+  .app-container { padding: 12px; }
+  .ios-header-zone { padding: 30px 0 20px 0; }
+  h1.main-logo-apple { font-size: 28px !important; }
+  .avatar-placeholder { width: 56px; height: 56px; }
+
+  .apple-bento-grid { grid-template-columns: 1fr; gap: 12px; }
+  .welcome-widget, .stack-widget { grid-column: span 1; }
+  .stack-details-ios { flex-direction: column; gap: 16px; }
+  .separator { display: none; }
+
+  .status-widget-ios, .portfolio-widget-ios { height: auto; min-height: 130px; }
+}
+
+.avatar-container {
+  width: 64px !important;
+  height: 64px !important;
+  min-width: 64px !important;
+  min-height: 64px !important;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--apple-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+.avatar-container:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+}
+
+/* МОДАЛЬНОЕ ОКНО ДЛЯ ПОЛНОЭКРАННОГО ФОТО */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.image-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.full-avatar-img {
+  max-width: 85vw;
+  max-height: 80vh;
+  border-radius: 24px;
+  object-fit: contain;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--apple-border);
+  animation: scaleUp 0.25s ease-out;
+}
+
+.close-modal-hint {
+  color: var(--apple-text-gray);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.9); }
+  to { transform: scale(1); }
+}
